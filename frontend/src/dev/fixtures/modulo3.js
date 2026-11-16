@@ -1,0 +1,126 @@
+import { b, buildFlashcards, buildQuestions, buildTopics, p, ul } from './helpers.js';
+
+export const resumo3 =
+  'Relacionamento com o cliente: suitability e perfil do investidor, Código de Ética da ANBIMA, prevenção à lavagem de dinheiro (Lei 9.613), conflito de interesses, LGPD e a Resolução CVM 175.';
+
+export const topicos3 = buildTopics(3, [
+  ['3.1.1', 'Suitability: conceito e etapas (API)', 'Alta',
+    p(`O ${b('suitability')} (adequação de produtos e serviços ao perfil do cliente) exige que a instituição conheça o investidor antes de recomendar. O processo tem etapas: ${b('coleta de informações')}, ${b('classificação do perfil')} e ${b('verificação de adequação')}.`) +
+      ul(['Avalia objetivos de investimento, situação financeira e conhecimento do cliente.', 'O questionário e o perfil devem ser atualizados periodicamente.', 'O profissional de distribuição responde pela recomendação adequada.']),
+    ['"Adequação ao perfil" ou "API" -> suitability.', 'Recomendação de produto sem conhecer o cliente -> descumprimento.'],
+    ['Achar que o suitability se aplica apenas na primeira operação.', 'Dispensar a verificação porque o cliente "pediu" o produto sem aviso formal de desenquadramento.']],
+  ['3.1.2', 'Perfis de investidor: conservador, moderado e arrojado', 'Alta',
+    p(`O perfil combina ${b('tolerância a risco')}, ${b('horizonte de investimento')} e ${b('necessidade de liquidez')}. Cada perfil tem produtos compatíveis.`) +
+      ul([`${b('Conservador')}: prioriza preservação do capital e liquidez (renda fixa de baixo risco).`, `${b('Moderado')}: aceita oscilações em troca de maior retorno (multimercados, parte em renda variável).`, `${b('Arrojado')}: tolera volatilidade e perdas (ações, derivativos, produtos estruturados).`]),
+    ['"Não aceita perdas" -> conservador.', 'Longo prazo e alta tolerância à volatilidade -> arrojado.'],
+    ['Recomendar renda variável a perfil conservador por causa da rentabilidade passada.']],
+  ['3.2.1', 'Código de Ética da ANBIMA: princípios', 'Alta',
+    p(`O Código de Ética da ANBIMA orienta a conduta das instituições associadas e dos profissionais, com base em ${b('integridade')}, ${b('transparência')}, ${b('diligência')} e ${b('lealdade')} ao cliente.`) +
+      ul(['Exige tratamento equitativo de clientes.', 'Veda o uso de informação privilegiada.', 'Reforça o dever de zelar pela reputação do mercado.']),
+    ['"Interesse do cliente acima do interesse próprio" -> ética e fidúcia.'],
+    ['Considerar a autorregulação ANBIMA como substituta da regulação da CVM.']],
+  ['3.2.2', 'Conflito de interesses e segregação de atividades', 'Alta',
+    p(`Há ${b('conflito de interesses')} quando um interesse particular pode influenciar a atuação em favor do cliente. A resposta é ${b('identificar, evitar, mitigar e informar')}.`) +
+      ul(['Segregação de atividades (muralhas de informação, ou "chinese wall").', 'Recebimento de presentes e benefícios sujeito a limites e registro.', 'Transparência sobre remuneração e vínculos.']),
+    ['Mesma instituição aconselha e negocia por conta própria -> conflito.'],
+    ['Imaginar que basta o profissional "acreditar" que não será influenciado.']],
+  ['3.2.3', 'Informação privilegiada e insider trading', 'Média',
+    p(`${b('Informação privilegiada')} é aquela relevante, ainda não pública, capaz de influenciar cotações. Usá-la em benefício próprio ou de terceiros caracteriza ${b('insider trading')}, crime contra o mercado de capitais.`),
+    ['Operar antes da divulgação de fato relevante -> uso indevido.'],
+    ['Pensar que repassar a informação a um amigo, sem operar, é conduta aceitável.']],
+  ['3.3.1', 'PLD/FT: lavagem de dinheiro e Lei 9.613/98', 'Alta',
+    p(`A lavagem de dinheiro ocorre em três fases: ${b('colocação')}, ${b('ocultação')} (estratificação) e ${b('integração')}. A ${b('Lei 9.613/98')} tipifica o crime e cria o ${b('COAF')}.`) +
+      ul(['Instituições devem manter cadastro, registros e controles internos.', 'Operações suspeitas são comunicadas ao COAF sem aviso ao cliente.', 'A comunicação de boa-fé não gera responsabilidade civil ou administrativa.']),
+    ['"Origem ilícita dos recursos" -> lavagem.', '"Comunicar ao COAF" -> sigilo total quanto ao cliente.'],
+    ['Avisar o cliente de que a operação foi comunicada ao COAF.', 'Trocar as fases: integração vem por último.']],
+  ['3.3.2', 'KYC, abordagem baseada em risco e PEP', 'Alta',
+    p(`O ${b('KYC')} (conheça seu cliente) e a ${b('abordagem baseada em risco')} definem a intensidade da diligência. ${b('Pessoas expostas politicamente (PEP)')} exigem atenção reforçada.`) +
+      ul(['Manter cadastro atualizado e identificar o beneficiário final.', 'Monitorar operações incompatíveis com a capacidade financeira.', 'Registrar e guardar documentos pelo prazo regulatório.']),
+    ['Cliente PEP -> monitoramento reforçado.', 'Estrutura societária opaca -> identificar beneficiário final.'],
+    ['Tratar todos os clientes com o mesmo nível de diligência.']],
+  ['3.4.1', 'LGPD: proteção de dados pessoais', 'Média',
+    p(`A ${b('Lei 13.709/2018 (LGPD)')} regula o tratamento de dados pessoais, com base em ${b('finalidade')}, ${b('necessidade')}, ${b('transparência')} e ${b('segurança')}. A autoridade fiscalizadora é a ${b('ANPD')}.`) +
+      ul(['O titular pode acessar, corrigir e solicitar a eliminação de seus dados.', 'O tratamento exige base legal (consentimento, obrigação legal, execução de contrato etc.).', 'Incidentes de segurança devem ser comunicados à ANPD e ao titular.']),
+    ['"Dados pessoais do cliente" -> LGPD, finalidade e consentimento.'],
+    ['Entender que o consentimento é a única base legal possível.', 'Supor que a obrigação de guardar dados da PLD é afastada pela LGPD.']],
+  ['3.5.1', 'Resolução CVM 175: fundos e responsabilidades', 'Alta',
+    p(`A ${b('Resolução CVM 175')} consolida a regulação dos fundos de investimento, com regras gerais e anexos por categoria. Define responsabilidades de ${b('administrador')} e ${b('gestor')} e a figura do ${b('prestador de serviço')}.`) +
+      ul(['Administrador e gestor têm deveres fiduciários.', 'Permite classes de cotas e subclasses com direitos distintos.', 'Exige transparência de taxas, regulamento e material de divulgação.']),
+    ['"Regulamento, classes e subclasses" -> CVM 175.'],
+    ['Confundir administrador (responsável pelo fundo) com gestor (responsável pela carteira).']],
+  ['3.5.2', 'Relacionamento com o cliente: informação e atendimento', 'Média',
+    p(`O profissional deve prestar informações ${b('claras')}, ${b('completas')} e ${b('não enganosas')}, explicando riscos, custos e liquidez, e evitar promessas de rentabilidade.`) +
+      ul(['Documentar recomendações e comunicações relevantes.', 'Tratar reclamações com prazo e canal adequados (ouvidoria).', 'Divulgar a rentabilidade passada com ressalva de que não garante resultado futuro.']),
+    ['"Rentabilidade garantida" -> prática vedada.'],
+    ['Destacar apenas os ganhos e omitir riscos do produto.']],
+]);
+
+export const flashcards3 = buildFlashcards(3, [
+  ['O que é suitability?', p(`A ${b('adequação')} de produtos e serviços ao perfil, objetivos e situação financeira do cliente.`)],
+  ['Quais são as fases da lavagem de dinheiro?', p(`${b('Colocação')}, ${b('ocultação')} e ${b('integração')}.`)],
+  ['Qual lei tipifica o crime de lavagem de dinheiro no Brasil?', p(`${b('Lei 9.613/98')}, que também criou o COAF.`)],
+  ['O que significa KYC?', p(`${b('Know Your Client')}: conhecer o cliente, com cadastro, origem de recursos e perfil.`)],
+  ['O que é insider trading?', p('Uso de informação privilegiada, relevante e não pública, em benefício próprio ou de terceiros.')],
+  ['Qual autoridade fiscaliza a LGPD?', p(`A ${b('ANPD')} - Autoridade Nacional de Proteção de Dados.`)],
+  ['Como tratar um conflito de interesses?', p(`${b('Identificar, evitar, mitigar e informar')} o cliente.`)],
+  ['Qual norma da CVM consolida a regulação dos fundos?', p(`A ${b('Resolução CVM 175')}.`)],
+]);
+
+const q = (extra) => ({ pd: '3.1', tp: 'Suitability', nivel: 'Compreensão', dif: 'Médio', ...extra });
+
+export const questoes3 = buildQuestions(3, [
+  q({ of: 'M3_01', nivel: 'Memorização', dif: 'Fácil',
+    enun: 'O processo de suitability tem como objetivo principal:',
+    alts: [['Aumentar a rentabilidade da instituição.', 'O foco é o cliente, não o resultado da instituição.'], ['Verificar a adequação dos produtos ao perfil do cliente.', 'Correto.'], ['Garantir rentabilidade mínima ao investidor.', 'Nenhuma norma garante rentabilidade.'], ['Substituir o cadastro do cliente.', 'Ele complementa o cadastro.']],
+    ok: 1, gab: 'Suitability é a adequação de produtos e serviços ao perfil do investidor.' }),
+  q({ of: 'M3_02', pd: '3.1', tp: 'Perfil do investidor', nivel: 'Aplicação',
+    ctx: 'Carlos, 62 anos, precisa dos recursos em 18 meses para a compra de um imóvel e afirma não aceitar qualquer perda de capital.',
+    enun: 'Qual perfil e produto são mais compatíveis com esse cliente?',
+    alts: [['Arrojado, com ações de empresas pequenas.', 'Incompatível com horizonte curto e aversão a perdas.'], ['Moderado, com derivativos alavancados.', 'Alavancagem contraria a aversão a perdas.'], ['Conservador, com títulos públicos pós-fixados de alta liquidez.', 'Correto.'], ['Arrojado, com fundos de crédito de alto risco.', 'Risco incompatível com o objetivo.']],
+    ok: 2, gab: 'Prazo curto, necessidade de liquidez e aversão a perdas indicam perfil conservador.' }),
+  q({ of: 'M3_03', pd: '3.3', tp: 'PLD/FT', nivel: 'Memorização', dif: 'Fácil',
+    enun: 'Na lavagem de dinheiro, a etapa em que os recursos ilícitos retornam à economia com aparência lícita chama-se:',
+    alts: [['Colocação.', 'É a inserção inicial no sistema financeiro.'], ['Ocultação.', 'É a dissimulação da origem por várias transações.'], ['Integração.', 'Correto.'], ['Segregação.', 'Não é fase da lavagem.']],
+    ok: 2, gab: 'A integração é a última fase: o dinheiro reaparece com aparência legítima.' }),
+  q({ of: 'M3_04', pd: '3.3', tp: 'COAF', nivel: 'Aplicação', dif: 'Difícil',
+    ctx: 'Uma gestora identifica movimentações incompatíveis com a capacidade financeira de um cliente e decide comunicar o COAF.',
+    enun: 'Qual é o procedimento correto?',
+    alts: [['Informar o cliente antes, para que ele se explique.', 'A comunicação deve ser sigilosa.'], ['Comunicar o COAF sem dar ciência ao cliente.', 'Correto: sigilo é obrigatório.'], ['Aguardar decisão judicial antes de comunicar.', 'Não há essa exigência.'], ['Encerrar a conta e não comunicar.', 'Encerrar não dispensa a comunicação.']],
+    ok: 1, gab: 'A comunicação ao COAF é feita sem ciência do cliente; a boa-fé afasta responsabilização.' }),
+  q({ of: 'M3_05', pd: '3.2', tp: 'Código de Ética', nivel: 'Compreensão',
+    enun: 'Segundo os princípios do Código de Ética da ANBIMA, o profissional deve:',
+    alts: [['Priorizar o resultado da instituição ao do cliente.', 'Contraria o dever de lealdade.'], ['Atuar com integridade, transparência e diligência.', 'Correto.'], ['Divulgar informações confidenciais a parceiros.', 'Viola o sigilo.'], ['Aceitar presentes sem limite ou registro.', 'Brindes têm limites e controle.']],
+    ok: 1, gab: 'Integridade, transparência e diligência estruturam a conduta ética.' }),
+  q({ of: 'M3_06', pd: '3.2', tp: 'Conflito de interesses', nivel: 'Aplicação',
+    ctx: 'Uma corretora recomenda a seus clientes um fundo gerido por empresa do mesmo grupo, sem informar o vínculo.',
+    enun: 'Essa conduta é:',
+    alts: [['Permitida, pois o fundo pertence ao grupo.', 'O vínculo exige transparência.'], ['Inadequada, por ocultar potencial conflito de interesses.', 'Correto.'], ['Obrigatória para todos os clientes.', 'Não existe tal obrigação.'], ['Adequada, se a taxa for baixa.', 'A taxa não elimina o dever de informar.']],
+    ok: 1, gab: 'O conflito deve ser identificado e informado ao cliente.' }),
+  q({ pd: '3.4', tp: 'LGPD', nivel: 'Compreensão',
+    enun: 'De acordo com a LGPD, é correto afirmar que:',
+    alts: [['O consentimento é a única base legal de tratamento.', 'Há outras bases, como obrigação legal e execução de contrato.'], ['O titular pode solicitar acesso e correção de seus dados.', 'Correto.'], ['A ANPD é um órgão do Bacen.', 'A ANPD é autoridade própria.'], ['A lei não se aplica a instituições financeiras.', 'Aplica-se a todos os agentes de tratamento.']],
+    ok: 1, gab: 'A LGPD assegura direitos ao titular, como acesso, correção e eliminação.' }),
+  q({ pd: '3.5', tp: 'CVM 175', nivel: 'Compreensão',
+    enun: 'Sobre a Resolução CVM 175, é correto afirmar que ela:',
+    alts: [['Regula apenas fundos de ações.', 'Abrange diversas categorias, por anexos.'], ['Consolida a regulação dos fundos de investimento.', 'Correto.'], ['Retira a responsabilidade do gestor.', 'Gestor e administrador têm deveres fiduciários.'], ['Proíbe a criação de subclasses de cotas.', 'Subclasses são previstas.']],
+    ok: 1, gab: 'A CVM 175 organiza o regime dos fundos, com regras gerais e anexos.' }),
+  q({ pd: '3.2', tp: 'Insider trading', nivel: 'Aplicação', dif: 'Difícil',
+    ctx: 'Um analista soube, antes da divulgação, de uma fusão relevante e sugeriu a um familiar comprar ações da empresa envolvida.',
+    enun: 'Essa conduta caracteriza:',
+    alts: [['Uso regular de pesquisa de mercado.', 'A informação não era pública.'], ['Uso indevido de informação privilegiada.', 'Correto.'], ['Operação de arbitragem.', 'Não há relação.'], ['Conduta permitida, pois foi a familiar.', 'Repassar também configura infração.']],
+    ok: 1, gab: 'Repassar ou usar informação privilegiada configura insider trading.' }),
+  q({ pd: '3.3', tp: 'KYC e PEP', nivel: 'Aplicação',
+    ctx: 'Um novo cliente é pessoa exposta politicamente e deseja abrir conta para movimentar valores elevados.',
+    enun: 'Qual é a postura adequada da instituição?',
+    alts: [['Recusar toda PEP como cliente.', 'A PEP não é proibida, exige cautela.'], ['Aplicar diligência reforçada e monitoramento contínuo.', 'Correto.'], ['Tratar como cliente comum.', 'Descumpre a abordagem baseada em risco.'], ['Dispensar a identificação do beneficiário final.', 'A identificação é obrigatória.']],
+    ok: 1, gab: 'PEP exige diligência reforçada, conforme a abordagem baseada em risco.' }),
+  q({ pd: '3.5', tp: 'Relacionamento com cliente', nivel: 'Compreensão', dif: 'Fácil',
+    enun: 'Ao apresentar a rentabilidade passada de um fundo, o profissional deve:',
+    alts: [['Garantir que ela se repetirá.', 'É vedado prometer rentabilidade.'], ['Informar que a rentabilidade passada não garante resultado futuro.', 'Correto.'], ['Omitir os riscos do produto.', 'Riscos devem ser informados.'], ['Mostrar somente o melhor período.', 'Seria uma informação enganosa.']],
+    ok: 1, gab: 'A comunicação deve ser clara, completa e com a ressalva sobre resultados futuros.' }),
+  q({ pd: '3.1', tp: 'Suitability', nivel: 'Aplicação', dif: 'Difícil',
+    ctx: 'Uma cliente de perfil conservador insiste em aplicar em um produto de alto risco, contra a recomendação do profissional.',
+    enun: 'Qual é a conduta mais adequada?',
+    alts: [['Executar a ordem sem qualquer registro.', 'Falta formalização do desenquadramento.'], ['Alertar sobre o desenquadramento e formalizar a ciência da cliente antes de executar.', 'Correto.'], ['Alterar o perfil dela sem consultá-la.', 'Fraude ao processo de suitability.'], ['Recusar-se a atender definitivamente.', 'Não é a medida exigida.']],
+    ok: 1, gab: 'O desenquadramento deve ser comunicado e a ciência do cliente documentada.' }),
+]);

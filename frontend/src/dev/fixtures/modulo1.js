@@ -1,0 +1,122 @@
+import { b, buildFlashcards, buildQuestions, buildTopics, p, ul } from './helpers.js';
+
+export const resumo1 =
+  'Arquitetura do SFN (normativos, supervisores e operadores), política monetária e fiscal, matemática financeira aplicada e infraestrutura de mercado.';
+
+export const topicos1 = buildTopics(1, [
+  ['1.1.1', 'Estrutura do SFN: normativos, supervisores e operadores', 'Alta',
+    p(`O SFN se organiza em três degraus: ${b('normativos')} (definem diretrizes), ${b('supervisores')} (fiscalizam e punem) e ${b('operadores')} (intermediam recursos).`) +
+      ul([`${b('CMN')}: órgão normativo máximo para moeda, crédito e câmbio.`, `${b('Bacen')}: supervisiona bancos, câmbio e o SPB.`, `${b('CVM')}: supervisiona valores mobiliários.`, `${b('CNSP / SUSEP')}: seguros, capitalização e previdência aberta.`, `${b('CNPC / PREVIC')}: previdência complementar fechada.`]),
+    ['Começa com "Conselho" -> órgão normativo.', 'Começa com "Banco Central", "Comissão" ou "Superintendência" -> supervisor.'],
+    ['Dizer que o CMN fiscaliza ou pune instituições.', 'Atribuir à SUSEP a supervisão de consórcios (é do Bacen).']],
+  ['1.1.2', 'Composição e atribuições do CMN', 'Alta',
+    p(`O CMN é composto por três membros: ${b('Ministro da Fazenda')} (presidente), ${b('Ministro do Planejamento e Orçamento')} e ${b('Presidente do Banco Central')}.`) +
+      ul(['Fixa a meta de inflação; a meta da Selic, porém, é definida pelo Copom.', 'Estabelece diretrizes de crédito, câmbio e funcionamento do SFN.']),
+    ['Meta de inflação definida pelo CMN; instrumento de execução com o Bacen.'],
+    ['Confundir CMN com Copom: o Copom define a meta da Selic.']],
+  ['1.2.1', 'Operadores bancários: comerciais, investimento e múltiplos', 'Alta',
+    p('Cada tipo de banco tem foco próprio dentro do sistema de intermediação.') +
+      ul([`${b('Comercial')}: depósitos à vista, curto prazo.`, `${b('Investimento')}: médio e longo prazo, ${b('underwriting')}, sem conta-corrente.`, `${b('Múltiplo')}: CNPJ único, ao menos duas carteiras (uma comercial ou de investimento).`]),
+    ['Sem conta-corrente e com underwriting -> banco de investimento.'],
+    ['Achar que banco múltiplo precisa de três carteiras.']],
+  ['1.2.2', 'Cooperativas, fintechs (SCD e SEP) e instituições de pagamento', 'Média',
+    p(`A ${b('cooperativa singular')} atende o cooperado na ponta; o ${b('banco cooperativo')} fornece liquidez e acesso a mercados.`) +
+      ul([`${b('SCD')}: empresta com capital próprio em plataforma digital.`, `${b('SEP')}: empréstimo entre pessoas (P2P).`, `${b('IP')}: contas de pagamento e cartões, sem empréstimo com recursos próprios.`]),
+    ['"Espinha dorsal de liquidez" -> banco cooperativo.'],
+    ['Imaginar que IP pode conceder crédito com recursos próprios.']],
+  ['1.2.3', 'FGC: coberturas e limites', 'Alta',
+    p(`O FGC garante até ${b('R$ 250 mil por CPF/CNPJ')} por instituição ou conglomerado, com teto global de ${b('R$ 1 milhão')} a cada 4 anos.`) +
+      ul(['Cobre depósitos à vista, poupança, CDB, RDB, LCI, LCA e LC.', 'Não cobre fundos de investimento, debêntures, CRI e CRA.']),
+    ['Produto de crédito emitido por banco -> provavelmente coberto.', 'Produto do mercado de capitais -> sem FGC.'],
+    ['Somar limites de instituições do mesmo conglomerado.']],
+  ['1.3.1', 'Política monetária: Copom, Selic e instrumentos', 'Alta',
+    p(`O ${b('Copom')} define a meta da Selic. O Bacen executa a política por ${b('operações compromissadas')}, ${b('depósito compulsório')} e ${b('redesconto')}.`) +
+      ul(['Selic alta -> contrai crédito e consumo, reduz inflação.', 'Selic baixa -> estimula atividade e crédito.']),
+    ['Inflação acima da meta -> alta da Selic.'],
+    ['Associar alta de juros a estímulo do consumo.']],
+  ['1.3.2', 'Política fiscal e resultado primário', 'Média',
+    p(`A política fiscal usa ${b('gastos públicos')} e ${b('tributos')}. O ${b('resultado primário')} exclui o pagamento de juros da dívida.`) +
+      ul(['Superávit primário ajuda a estabilizar a dívida.', 'Déficit nominal inclui juros.']),
+    ['"Antes do pagamento de juros" -> resultado primário.'],
+    ['Confundir resultado primário com resultado nominal.']],
+  ['1.3.3', 'Inflação e índices de preços (IPCA, IGP-M)', 'Média',
+    p(`O ${b('IPCA')} é o índice oficial da meta de inflação. O ${b('IGP-M')} é usado em contratos de aluguel e tem forte influência de preços no atacado e câmbio.`),
+    ['Meta de inflação -> IPCA.', 'Reajuste tradicional de aluguel -> IGP-M.'],
+    ['Usar IGP-M como índice oficial de inflação.']],
+  ['1.4.1', 'Matemática financeira: juros simples, compostos e equivalência', 'Alta',
+    p(`Juros compostos: ${b('M = C x (1 + i)^n')}. Em juros simples: ${b('M = C x (1 + i x n)')}.`) +
+      ul(['Taxas equivalentes: (1 + ia) = (1 + im)^12.', 'Taxa real: (1 + nominal) / (1 + inflação) - 1.', 'Na HP 12C use as teclas n, i, PV, PMT e FV, lembrando de limpar o registrador com f CLX.']),
+    ['Enunciado com "HP 12C" ou "capitalização" -> cálculo exato.'],
+    ['Dividir taxa anual por 12 para obter a taxa mensal equivalente.']],
+  ['1.5.1', 'Infraestrutura de mercado: B3, SELIC, CETIP e câmbio', 'Média',
+    p(`A ${b('B3')} concentra bolsa e balcão organizado. O sistema ${b('Selic')} registra títulos públicos federais e o ${b('SPB')} liquida pagamentos entre instituições, incluindo o ${b('Pix')}.`),
+    ['Liquidação bruta em tempo real -> STR/SPB.'],
+    ['Achar que a CVM opera o sistema de liquidação.']],
+]);
+
+export const flashcards1 = buildFlashcards(1, [
+  ['Quem é o órgão normativo máximo do SFN para moeda e crédito?', p(`${b('CMN')} - Conselho Monetário Nacional.`)],
+  ['Quem executa e fiscaliza a política monetária?', p(`O ${b('Banco Central')}, com decisões de juros no ${b('Copom')}.`)],
+  ['Limite de garantia do FGC por CPF/CNPJ e instituição', p(`${b('R$ 250 mil')}, com teto global de R$ 1 milhão a cada 4 anos.`)],
+  ['O que o Copom define?', p(`A ${b('meta da taxa Selic')} a cada reunião.`)],
+  ['Qual a diferença entre Selic meta e Selic over?', p('Meta é o alvo definido pelo Copom; over é a taxa média apurada nas operações compromissadas.')],
+  ['Fórmula do montante em juros compostos', p(`${b('M = C x (1 + i)^n')}`)],
+  ['Quem supervisiona seguros e previdência aberta?', p(`${b('SUSEP')} (normativo: CNSP).`)],
+  ['O que é taxa real de juros?', p('Taxa nominal descontada da inflação: (1 + nominal) / (1 + inflação) - 1.')],
+]);
+
+const q = (extra) => ({ pd: '1.1', tp: 'Estrutura do SFN', nivel: 'Compreensão', dif: 'Médio', ...extra });
+
+export const questoes1 = buildQuestions(1, [
+  q({ of: '000084', nivel: 'Memorização', dif: 'Fácil',
+    enun: 'Qual órgão é responsável por formular as diretrizes gerais de moeda, crédito e câmbio no Brasil?',
+    alts: [['Banco Central do Brasil', 'O Bacen executa e supervisiona, mas não é o normativo máximo.'], ['Conselho Monetário Nacional', 'Correto: o CMN é o órgão normativo.'], ['Comissão de Valores Mobiliários', 'A CVM trata de valores mobiliários.'], ['SUSEP', 'A SUSEP supervisiona seguros e previdência aberta.']],
+    ok: 1, gab: 'O CMN formula as diretrizes; o Bacen as executa e supervisiona.' }),
+  q({ of: '000085', tp: 'Operadores', pd: '1.2',
+    enun: 'Qual característica diferencia um banco cooperativo de uma cooperativa de crédito singular?',
+    alts: [['Atende diretamente o cooperado na ponta.', 'Isso descreve a cooperativa singular.'], ['Fornece liquidez e acesso a mercados às cooperativas singulares.', 'Correto: é a "espinha dorsal" do sistema.'], ['É regulado pela CVM.', 'A regulação é do CMN/Bacen.'], ['Não pode captar depósitos.', 'Pode operar normalmente conforme sua estrutura.']],
+    ok: 1, gab: 'O banco cooperativo atua como infraestrutura das singulares.' }),
+  q({ of: '000086', tp: 'Mercado monetário', pd: '1.3', dif: 'Fácil',
+    enun: 'O mercado monetário tem como finalidade principal:',
+    alts: [['Financiar projetos de longo prazo das empresas.', 'Isso é mercado de capitais.'], ['Ajustar a liquidez da economia e orientar os juros de curto prazo.', 'Correto.'], ['Negociar moedas estrangeiras.', 'Isso é mercado cambial.'], ['Conceder crédito ao consumidor.', 'Isso é mercado de crédito.']],
+    ok: 1, gab: 'Mercado monetário: liquidez e taxa de juros de curto prazo.' }),
+  q({ pd: '1.3', tp: 'Política monetária', nivel: 'Aplicação',
+    ctx: 'A inflação medida pelo IPCA permanece acima do teto da meta há vários meses.',
+    enun: 'Qual ação do Copom é mais coerente com esse cenário?',
+    alts: [['Reduzir a meta da Selic.', 'Reduzir juros estimula a demanda e pode aumentar a inflação.'], ['Elevar a meta da Selic.', 'Correto: juros mais altos contêm demanda.'], ['Reduzir o compulsório.', 'Isso aumentaria liquidez.'], ['Aumentar os gastos do governo.', 'Seria política fiscal expansionista.']],
+    ok: 1, gab: 'Inflação alta pede aperto monetário, ou seja, elevação da Selic.' }),
+  q({ pd: '1.4', tp: 'Matemática financeira', nivel: 'Aplicação', dif: 'Médio',
+    ctx: 'Na HP 12C, Marina aplica R$ 10.000,00 por 2 meses à taxa de 2% ao mês no regime de juros compostos.',
+    enun: 'Qual o montante ao final do período?',
+    alts: [['R$ 10.400,00', 'Esse valor corresponde a juros simples.'], ['R$ 10.404,00', 'Correto: 10.000 x 1,02^2.'], ['R$ 10.200,00', 'Considera apenas um mês.'], ['R$ 10.408,08', 'Corresponde a três meses de capitalização parcial, não ao período.']],
+    ok: 1, gab: 'M = 10.000 x (1,02)^2 = 10.404,00. Na HP 12C: 10000 CHS PV, 2 i, 2 n, FV.' }),
+  q({ pd: '1.4', tp: 'Taxa real', nivel: 'Aplicação', dif: 'Difícil',
+    enun: 'Um CDB rende 12,00% ao ano, e a inflação no período foi de 5,00%. Qual a taxa real aproximada?',
+    alts: [['7,00%', 'Subtração direta, só aproximação grosseira.'], ['6,67%', 'Correto: 1,12/1,05 - 1.'], ['17,60%', 'Soma indevida das taxas.'], ['2,40%', 'Divisão incorreta.']],
+    ok: 1, gab: 'Taxa real = 1,12 / 1,05 - 1 = 6,67% ao ano.' }),
+  q({ of: '000091', tp: 'FGC', pd: '1.2', dif: 'Fácil', nivel: 'Memorização',
+    enun: 'Qual dos produtos abaixo NÃO é coberto pelo FGC?',
+    alts: [['CDB', 'É coberto.'], ['LCI', 'É coberta.'], ['Cotas de fundos de investimento', 'Correto: não têm cobertura do FGC.'], ['Poupança', 'É coberta.']],
+    ok: 2, gab: 'Fundos, debêntures, CRI e CRA não contam com FGC.' }),
+  q({ tp: 'Política fiscal', pd: '1.3',
+    enun: 'Sobre o resultado primário do governo, é correto afirmar que:',
+    alts: [['Inclui o pagamento de juros da dívida.', 'Isso é o resultado nominal.'], ['Exclui as despesas com juros da dívida pública.', 'Correto.'], ['Mede apenas a arrecadação de impostos.', 'Ignora as despesas.'], ['É definido pelo Copom.', 'O Copom define a Selic.']],
+    ok: 1, gab: 'Resultado primário = receitas - despesas, exceto juros.' }),
+  q({ tp: 'Infraestrutura', pd: '1.5', nivel: 'Memorização', dif: 'Fácil',
+    enun: 'O Pix, arranjo de pagamentos instantâneos, é liquidado em qual infraestrutura?',
+    alts: [['Sistema de Pagamentos Brasileiro (SPB)', 'Correto: o Pix opera sobre o SPB.'], ['Sistema de custódia da CVM', 'A CVM não opera pagamentos.'], ['Bolsa de valores', 'A B3 negocia ativos, não liquida Pix.'], ['Sistema do CMN', 'O CMN apenas normatiza.']],
+    ok: 0, gab: 'Pix é um arranjo de pagamentos instantâneos do SPB.' }),
+  q({ tp: 'Juros simples', pd: '1.4', nivel: 'Aplicação',
+    ctx: 'Um investidor aplica R$ 5.000,00 a juros simples de 1% ao mês durante 6 meses.',
+    enun: 'Qual o valor dos juros ao final do período?',
+    alts: [['R$ 300,00', 'Correto: 5.000 x 0,01 x 6.'], ['R$ 306,15', 'Valor de juros compostos.'], ['R$ 50,00', 'Considera apenas um mês.'], ['R$ 600,00', 'Dobra o prazo.']],
+    ok: 0, gab: 'J = C x i x n = 5.000 x 0,01 x 6 = 300.' }),
+  q({ tp: 'Índices de preços', pd: '1.3', dif: 'Fácil',
+    enun: 'O índice de preços oficialmente utilizado no sistema de metas de inflação do Brasil é o:',
+    alts: [['IGP-M', 'Usado em contratos de aluguel.'], ['IPCA', 'Correto.'], ['INCC', 'Mede custo da construção.'], ['IPC-Fipe', 'Índice regional de São Paulo.']],
+    ok: 1, gab: 'O IPCA, calculado pelo IBGE, é o índice da meta de inflação.' }),
+  q({ tp: 'Supervisão', pd: '1.1', nivel: 'Memorização',
+    enun: 'Compete à CVM supervisionar:',
+    alts: [['Bancos comerciais.', 'Supervisão do Bacen.'], ['Fundos de investimento e companhias abertas.', 'Correto.'], ['Seguradoras.', 'Supervisão da SUSEP.'], ['Fundos de pensão.', 'Supervisão da PREVIC.']],
+    ok: 1, gab: 'A CVM atua sobre o mercado de valores mobiliários.' }),
+]);
