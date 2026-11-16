@@ -417,7 +417,9 @@ class HP12CEngine {
   }
 }
 
+// Autêntico layout 10x4 da HP 12C com ENTER vertical (row-span-2) na coluna 6
 const BUTTON_LAYOUT = [
+  // Linha 1 (10 teclas)
   { key: 'n', top: '12x', main: 'n' },
   { key: 'i', top: '12÷', main: 'i' },
   { key: 'PV', f: 'NPV', top: 'CFo', main: 'PV' },
@@ -429,6 +431,7 @@ const BUTTON_LAYOUT = [
   { key: '9', main: '9' },
   { key: '/', main: '÷' },
 
+  // Linha 2 (10 teclas)
   { key: 'y^x', top: '√x', main: 'yˣ' },
   { key: '1/x', main: '1/x' },
   { key: '%T', main: '%T' },
@@ -440,21 +443,27 @@ const BUTTON_LAYOUT = [
   { key: '6', main: '6' },
   { key: '*', main: '×' },
 
-  { key: 'f', main: 'f', variant: 'f' },
-  { key: 'g', main: 'g', variant: 'g' },
-  { key: 'STO', main: 'STO' },
-  { key: 'RCL', main: 'RCL' },
+  // Linha 3 (9 teclas + ENTER vertical que ocupa linhas 3 e 4 na coluna 6)
+  { key: 'R/S', main: 'R/S' },
+  { key: 'SST', main: 'SST' },
   { key: 'x<>y', f: 'FIN', main: 'x≷y' },
   { key: 'CLx', f: 'REG', main: 'CLx' },
+  { key: 'CHS_ALT', main: 'EEX', disabled: true },
+  { key: 'ENTER', top: 'LSTx', main: 'E N T E R', rowSpan2: true },
   { key: '1', main: '1' },
   { key: '2', main: '2' },
   { key: '3', main: '3' },
   { key: '-', main: '−' },
 
+  // Linha 4 (9 teclas ao redor do ENTER vertical)
   { key: 'ON', main: 'ON' },
-  { key: 'ENTER', top: 'LSTx', main: 'ENTER', span2: true },
+  { key: 'f', main: 'f', variant: 'f' },
+  { key: 'g', main: 'g', variant: 'g' },
+  { key: 'STO', main: 'STO' },
+  { key: 'RCL', main: 'RCL' },
   { key: '0', main: '0' },
   { key: '.', main: '·' },
+  { key: 'Σ+', main: 'Σ+', disabled: true },
   { key: '+', main: '+' },
 ];
 
@@ -466,8 +475,26 @@ export default function HP12C({ compact = false }) {
   const eng = engineRef.current;
 
   const handlePress = (key) => {
+    if (key === 'CHS_ALT' || key === 'R/S' || key === 'SST' || key === 'Σ+') return;
     eng.pressKey(key);
     setTick((t) => t + 1);
+  };
+
+  const handleKeyDown = (e) => {
+    if (/^[0-9]$/.test(e.key)) handlePress(e.key);
+    else if (e.key === '.' || e.key === ',') handlePress('.');
+    else if (e.key === '+') handlePress('+');
+    else if (e.key === '-') handlePress('-');
+    else if (e.key === '*') handlePress('*');
+    else if (e.key === '/') {
+      e.preventDefault();
+      handlePress('/');
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      handlePress('ENTER');
+    } else if (e.key === 'Backspace' || e.key === 'Escape') {
+      handlePress('CLx');
+    }
   };
 
   if (mode === 'estacio') {
@@ -495,7 +522,11 @@ export default function HP12C({ compact = false }) {
   }
 
   return (
-    <div className="rounded-2xl border-2 border-amber-500/70 bg-gradient-to-b from-zinc-800 to-zinc-950 p-3.5 shadow-2xl select-none">
+    <div
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      className="rounded-2xl border-2 border-amber-500/70 bg-gradient-to-b from-zinc-800 to-zinc-950 p-3.5 shadow-2xl outline-none select-none focus:ring-2 focus:ring-amber-400/50"
+    >
       {/* Top Gold Plate */}
       <div className="mb-2.5 flex items-center justify-between rounded-lg bg-gradient-to-r from-amber-500 via-amber-200 to-amber-600 px-3 py-1.5 text-zinc-950">
         <div className="flex items-center gap-2">
@@ -541,7 +572,7 @@ export default function HP12C({ compact = false }) {
         <span><b>FV:</b>{eng.tvm.FV.toFixed(0)}</span>
       </div>
 
-      {/* 10x4 Key Grid */}
+      {/* 10x4 Symmetrical Grid with tall vertical ENTER */}
       <div className="grid grid-cols-10 gap-1">
         {BUTTON_LAYOUT.map((b) => {
           const isF = b.variant === 'f';
@@ -551,7 +582,7 @@ export default function HP12C({ compact = false }) {
               key={b.key}
               type="button"
               onClick={() => handlePress(b.key)}
-              className={`${b.span2 ? 'col-span-2' : ''} flex min-h-[40px] flex-col items-center justify-between rounded-md border border-b-[3px] px-0.5 py-1 transition-transform active:translate-y-[1px] active:border-b ${
+              className={`${b.rowSpan2 ? 'row-span-2 min-h-[84px]' : 'min-h-[40px]'} flex flex-col items-center justify-between rounded-md border border-b-[3px] px-0.5 py-1 transition-transform active:translate-y-[1px] active:border-b ${
                 isF
                   ? 'border-amber-700 bg-gradient-to-b from-amber-400 to-amber-600 text-zinc-950'
                   : isG
@@ -562,7 +593,11 @@ export default function HP12C({ compact = false }) {
               <span className="text-[9px] font-extrabold leading-none text-amber-400">
                 {b.f || '\u00A0'}
               </span>
-              <span className="text-[11px] font-extrabold leading-tight">
+              <span
+                className={`${
+                  b.rowSpan2 ? 'text-[10px] leading-tight [writing-mode:horizontal-tb]' : 'text-[11px] leading-tight'
+                } font-extrabold text-center`}
+              >
                 {b.main}
               </span>
               <span className="text-[9px] font-bold leading-none text-sky-400">
