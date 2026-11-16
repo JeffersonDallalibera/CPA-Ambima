@@ -3,252 +3,430 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CPA Pro Mastery • Plataforma Oficial ANBIMA 2026</title>
+  <title>CPA Pro Mastery 2026 • Executive Financial Terminal ANBIMA</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="app-header">
-    <div class="header-inner">
-      <div class="brand">
-        <span class="brand-badge">CPA PRO</span>
-        <div>
-          <h1>
-            ANBIMA CPA Mastery 2026
-            <span class="badge badge-green">116/116 Itens Cesgranrio</span>
-          </h1>
-          <p>Preparação Intensiva Individualizada • 148 Questões Comentadas + 10 Mapas de Decisão Oficiais</p>
+  <div class="app-shell">
+    <!-- SIDEBAR EXECUTIVA LATERAL (EXECUTIVE PRIVATE BANKING & FINANCIAL TERMINAL) -->
+    <aside class="app-sidebar" id="app-sidebar" aria-label="Navegação Executiva CPA ANBIMA">
+      <div>
+        <div class="sidebar-brand">
+          <span class="brand-badge">CPA PRO</span>
+          <div>
+            <div style="font-weight:800; font-size:0.95rem; letter-spacing:-0.02em; color:var(--text);">Terminal ANBIMA</div>
+            <div style="font-size:0.72rem; color:var(--gold-metallic); font-family:var(--font-mono); font-weight:700;">EDITAL 2026 • 148 ITENS</div>
+          </div>
+        </div>
+
+        <div class="exec-card exec-card-gold" style="padding:12px 14px; margin:14px 0;">
+          <div style="font-size:0.68rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted);">
+            Índice de Prontidão ANBIMA
+          </div>
+          <div style="display:flex; align-items:baseline; justify-content:space-between; margin-top:4px;">
+            <span id="sidebar-readiness-val" style="font-family:var(--font-mono); font-size:1.5rem; font-weight:800; color:var(--gold-metallic);">0%</span>
+            <span class="badge badge-exec">Pesos 20/40/30/10</span>
+          </div>
+          <div style="font-size:0.72rem; color:var(--text-secondary); margin-top:4px;">Meta Oficial de Corte: <b>70% (35/50Q)</b></div>
+        </div>
+
+        <div class="sidebar-section-label">Navegação do Terminal</div>
+        <nav class="sidebar-nav" aria-label="Menu Principal">
+          <button type="button" class="sidebar-nav-btn active" data-tab="dashboard">
+            <span>🚀 Painel &amp; Sprint</span>
+            <span class="badge badge-gold">70/30</span>
+          </button>
+          <button type="button" class="sidebar-nav-btn" data-tab="estudo">
+            <span>📚 Estudo por Módulo</span>
+            <span class="badge badge-blue">38</span>
+          </button>
+          <button type="button" class="sidebar-nav-btn" data-tab="materiais">
+            <span>📊 Tabelas &amp; Guia HP 12C</span>
+            <span class="badge badge-exec">NOVO</span>
+          </button>
+          <button type="button" class="sidebar-nav-btn" data-tab="questoes">
+            <span>🎯 Banco de Questões</span>
+            <span class="badge badge-green">148</span>
+          </button>
+          <button type="button" class="sidebar-nav-btn" data-tab="cases">
+            <span>💬 Mapas de Decisão</span>
+            <span class="badge badge-amber">10</span>
+          </button>
+          <button type="button" class="sidebar-nav-btn" data-tab="flashcards">
+            <span>⚡ Flashcards 3D</span>
+            <span class="badge badge-purple">78</span>
+          </button>
+          <button type="button" class="sidebar-nav-btn" data-tab="simulado">
+            <span>⏱️ Simulado Oficial</span>
+            <span class="badge badge-red">50Q</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-section-label" style="margin-top:14px;">Atalhos de Estudo Concreto</div>
+        <div class="sidebar-nav">
+          <button type="button" class="sidebar-nav-btn" id="btn-sidebar-open-apostilas">
+            <span>📖 Apostilas Completas</span>
+            <span class="badge badge-cyan">MD</span>
+          </button>
+          <button type="button" class="sidebar-nav-btn" id="btn-sidebar-open-hp12c">
+            <span>🧮 Calculadora HP 12C</span>
+            <span class="badge badge-gold">RPN</span>
+          </button>
         </div>
       </div>
 
-      <div class="header-controls">
-        <span class="badge badge-green" id="db-status-badge">🗄️ PostgreSQL: cpa-ambima</span>
-        <button class="btn btn-sm" id="btn-toggle-hp12c-modal">🧮 HP 12C</button>
-        <div class="pomodoro-pill" title="Timer Pomodoro 50/10 para blocos de foco">
-          <span>🍅 Foco:</span>
-          <span class="pomodoro-time" id="pomo-display">50:00</span>
-          <button class="btn btn-sm" id="btn-pomo-toggle" style="padding:3px 9px;">▶</button>
-          <button class="btn btn-secondary btn-sm" id="btn-pomo-reset" style="padding:3px 8px;">↺</button>
+      <div class="sidebar-footer">
+        <div id="sidebar-db-status" style="display:flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:0.72rem; color:var(--emerald-bright);">
+          <span>●</span>
+          <span>PostgreSQL: cpa-ambima</span>
         </div>
-        <button class="btn btn-secondary btn-sm" id="btn-theme-toggle" title="Alternar Tema Claro/Escuro">🌓 Tema</button>
+        <div>Arquitetura Modular: <code>src/modules/*</code></div>
       </div>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL DO TERMINAL EXECUTIVO -->
+    <div class="app-main">
+      <header class="app-header">
+        <div class="header-inner">
+          <div class="brand">
+            <span class="brand-badge">CPA PRO</span>
+            <div>
+              <h1>
+                ANBIMA CPA Mastery 2026
+                <span class="badge badge-green">116/116 Fichas Cesgranrio</span>
+                <span class="badge badge-exec" id="readiness-header-pill">Prontidão ANBIMA: 0%</span>
+              </h1>
+              <p>Terminal Executivo de Preparação • 148 Questões Comentadas + Tabelas Comparativas + Receitas HP 12C + 10 Mapas de Decisão</p>
+            </div>
+          </div>
+
+          <div class="header-controls">
+            <span class="badge badge-green" id="db-status-badge">🗄️ PostgreSQL: cpa-ambima</span>
+            <button type="button" class="btn btn-gold btn-sm" id="btn-toggle-hp12c-modal">🧮 HP 12C</button>
+            <div class="pomodoro-pill" title="Timer Pomodoro 50/10 para blocos de foco">
+              <span>🍅 Foco:</span>
+              <span class="pomodoro-time" id="pomo-display">50:00</span>
+              <button type="button" class="btn btn-sm" id="btn-pomo-toggle" style="padding:3px 9px;">▶</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-pomo-reset" style="padding:3px 8px;">↺</button>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-theme-toggle" title="Alternar Tema Claro/Escuro">🌓 Tema</button>
+          </div>
+        </div>
+
+        <div class="nav-bar-wrap">
+          <nav class="nav-tabs" aria-label="Abas da Plataforma">
+            <button type="button" class="tab-btn active" data-tab="dashboard">🚀 Plano Sprint &amp; Painel</button>
+            <button type="button" class="tab-btn" data-tab="estudo">📚 Apostila &amp; Estudo (38)</button>
+            <button type="button" class="tab-btn" data-tab="materiais">📊 Tabelas &amp; Guia HP 12C</button>
+            <button type="button" class="tab-btn" data-tab="questoes">🎯 Banco de Questões (148)</button>
+            <button type="button" class="tab-btn" data-tab="cases">💬 Mapas de Decisão (10)</button>
+            <button type="button" class="tab-btn" data-tab="flashcards">⚡ Flashcards 3D (78)</button>
+            <button type="button" class="tab-btn" data-tab="simulado">⏱️ Simulado Real (50Q)</button>
+          </nav>
+        </div>
+      </header>
+
+      <main class="container">
+        <!-- TOP KPI HERO STRIP -->
+        <div class="kpi-strip" id="global-kpi-strip"></div>
+
+        <!-- ABA 1: DASHBOARD EXECUTIVO & PLANO SPRINT -->
+        <section id="view-dashboard" class="view-section active">
+          <!-- ÍNDICE DE PRONTIDÃO PONDERADO (READINESS SCORE ANBIMA 20/40/30/10) -->
+          <div id="executive-readiness-banner"></div>
+
+          <div class="alert-banner">
+            <strong>⚡ Estratégia Pareto 70/30 (Aprovação Executiva ANBIMA):</strong>
+            O <b>Módulo 2 (40% = 20 questões)</b> + <b>Módulo 3 (30% = 15 questões)</b> somam <b>70% do exame (35 questões — exatamente a nota de corte!)</b>.
+            Consulte as <b>📊 Tabelas Comparativas &amp; Guia Prático HP 12C</b>, leia as <b>📖 Apostilas Completas</b> e pratique as <b>148 questões comentadas alternativa por alternativa</b>.
+          </div>
+
+          <div class="grid-4" id="dashboard-stats"></div>
+
+          <!-- TÓPICOS PRIORITÁRIOS DE REVISÃO (TELEMETRIA POSTGRESQL /api/analytics) -->
+          <div class="exec-card exec-card-cyan" style="margin-bottom:22px;">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">🎯 Radar de Tópicos Prioritários para Revisão (Diagnóstico PostgreSQL)</h2>
+                <p style="font-size:0.8rem; color:var(--muted);">Ordenados pelo peso oficial ANBIMA (40% → 30% → 20% → 10%) e criticidade de prova</p>
+              </div>
+              <button type="button" class="btn btn-cyan btn-sm" id="btn-goto-deep-materials">📊 Abrir Tabelas &amp; Receitas HP 12C</button>
+            </div>
+            <div id="priority-topics-list" class="grid-4" style="margin-bottom:0;"></div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title">📅 Cronograma Hora-a-Hora (Domingo Noite → Terça)</h2>
+                <span class="badge badge-green" id="sprint-progress-badge">0% concluído</span>
+              </div>
+              <div id="sprint-schedule-list" style="max-height:540px; overflow-y:auto;"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title">🧠 Cola Oficial de Prova (Revisão Rápida de 15 Minutos)</h2>
+                <span class="badge badge-amber">Fórmulas &amp; Alíquotas</span>
+              </div>
+              <div style="margin-bottom:10px;">
+                <input type="text" id="cola-search" aria-label="Filtrar na cola de prova" placeholder="Filtrar na cola (ex: Fisher, FGC, CVM 175, PGBL, BDR)..." style="width:100%;">
+              </div>
+              <div id="cola-prova-list" style="max-height:480px; overflow-y:auto;"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ABA 2: ESTUDO GUIADO POR MÓDULO (TÓPICOS + LEITOR DE APOSTILAS COMPLETAS + MATERIAIS CONCRETOS) -->
+        <section id="view-estudo" class="view-section">
+          <div class="filter-bar">
+            <label for="study-mod-select"><b>Módulo:</b></label>
+            <select id="study-mod-select">
+              <option value="2">Módulo 2 — Produtos do Mercado Financeiro (40% • PRIORIDADE 1)</option>
+              <option value="3">Módulo 3 — Relacionamento, Finanças Pessoais, Ética e Ilícitos (30% • PRIORIDADE 2)</option>
+              <option value="1">Módulo 1 — Estrutura do SFN, Economia e Matemática Financeira (20%)</option>
+              <option value="4">Módulo 4 — Inovação: ESG, DeFi, Open Finance e IA (10%)</option>
+            </select>
+            <input type="text" id="study-search" aria-label="Buscar conceito no módulo" placeholder="Buscar conceito, gatilho ou pegadinha (ex: CVM 175, Spoofing, Selic)..." style="flex:1; min-width:220px;">
+            <span id="study-mastered-count" class="badge badge-green"></span>
+          </div>
+
+          <!-- SUB-NAVEGAÇÃO DO SISTEMA DE ESTUDO -->
+          <div class="study-subnav" id="study-subnav">
+            <button type="button" class="sub-tab-btn active" data-study-sub="topicos">📑 Tópicos Interativos do Edital (38)</button>
+            <button type="button" class="sub-tab-btn" data-study-sub="apostila">📖 Leitor de Apostila Completa &amp; Fichas Cesgranrio</button>
+            <button type="button" class="sub-tab-btn" data-study-sub="tabelas">📊 Tabelas Comparativas Financeiras</button>
+            <button type="button" class="sub-tab-btn" data-study-sub="hp12c">🧮 Guia Prático de Cálculos HP 12C</button>
+          </div>
+
+          <div id="study-module-header" class="exec-card exec-card-emerald" style="margin-bottom:16px;"></div>
+
+          <!-- PAINEL DE LEITURA DE APOSTILA COMPLETA DENTRO DE ESTUDO POR MÓDULO -->
+          <div id="study-apostila-panel" style="display:none; margin-bottom:20px;"></div>
+
+          <!-- PAINEL DE TABELAS / HP12C DENTRO DE ESTUDO POR MÓDULO -->
+          <div id="study-materials-inline" style="display:none; margin-bottom:20px;"></div>
+
+          <!-- LISTA DOS 38 TÓPICOS INTERATIVOS -->
+          <div id="study-topics-container"></div>
+        </section>
+
+        <!-- ABA 3 (NOVA): TABELAS COMPARATIVAS, GUIA PRÁTICO HP 12C & LEITOR DE APOSTILAS COMPLETAS -->
+        <section id="view-materiais" class="view-section">
+          <div class="alert-banner">
+            <strong>📊 Central de Materiais Concretos de Estudo &amp; Engenharia Financeira (`window.CPA_MATERIAIS_PROFUNDOS`):</strong>
+            Consulte as <b>6 Matrizes Comparativas Oficiais</b> (Tributação, Cobertura FGC, Arquitetura SFN, CVM 175, Ilícitos CVM 62 e SAC vs. Price), treine as <b>8 Receitas Passo a Passo da HP 12C</b> com simulação automática na calculadora e leia as <b>Apostilas Completas em Markdown</b>.
+          </div>
+
+          <div class="filter-bar">
+            <label for="mat-view-filter"><b>Seção:</b></label>
+            <select id="mat-view-filter">
+              <option value="all">Todas as Seções (Tabelas + Guia HP 12C + Apostilas Completas)</option>
+              <option value="tabelas">📊 1. Tabelas Comparativas Financeiras (6 Matrizes)</option>
+              <option value="hp12c">🧮 2. Guia Prático de Cálculos HP 12C (8 Receitas)</option>
+              <option value="apostilas">📖 3. Leitor de Apostilas Completas &amp; Resumos Executivos</option>
+            </select>
+            <input type="text" id="mat-search-input" aria-label="Filtrar tabelas, fórmulas HP 12C ou apostilas" placeholder="Filtrar tabela, tecla HP 12C ou tema (ex: FGC, Fisher, BDR, CVM 175, Price, Spoofing)..." style="flex:1; min-width:220px;">
+            <button type="button" class="btn btn-gold btn-sm" id="btn-mat-open-hp12c">🧮 Abrir HP 12C ao Vivo</button>
+          </div>
+
+          <!-- 1. TABELAS COMPARATIVAS -->
+          <div id="materiais-tabelas-section">
+            <div class="card-header" style="margin-bottom:12px;">
+              <h2 class="card-title" style="font-size:1.2rem;">📊 Matrizes &amp; Tabelas Comparativas de Alta Incidência ANBIMA</h2>
+              <span class="badge badge-exec">6 Tabelas Estruturadas</span>
+            </div>
+            <div id="materiais-tabelas-container"></div>
+          </div>
+
+          <!-- 2. GUIA PRÁTICO HP 12C -->
+          <div id="materiais-hp12c-section" style="margin-top:26px;">
+            <div class="card-header" style="margin-bottom:12px;">
+              <h2 class="card-title" style="font-size:1.2rem;">🧮 Guia Prático HP 12C — Receitas Passo a Passo para a Prova CPA</h2>
+              <span class="badge badge-gold">RPN + TVM + Fluxo de Caixa (NPV/IRR)</span>
+            </div>
+            <div class="hp12c-guide-grid" id="materiais-hp12c-container"></div>
+          </div>
+
+          <!-- 3. LEITOR DE APOSTILAS COMPLETAS & RESUMOS EXECUTIVOS -->
+          <div id="materiais-apostilas-section" style="margin-top:26px;">
+            <div class="exec-card exec-card-emerald" style="margin-bottom:18px;">
+              <div class="card-header" style="flex-wrap:wrap;">
+                <div>
+                  <h2 class="card-title" style="font-size:1.2rem;">📖 Leitor Corporativo de Apostilas Completas &amp; Resumos Cesgranrio</h2>
+                  <p style="font-size:0.82rem; color:var(--muted);">Conteúdo integral carregado de <code>/api/study-materials</code> e <code>window.CPA_MATERIAIS_PROFUNDOS.resumosModulos</code></p>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                  <select id="apostila-doc-select" aria-label="Selecionar apostila completa">
+                    <option value="modulo2">Apostila Módulo 2 — Produtos &amp; CVM 175 (40%)</option>
+                    <option value="modulo3">Apostila Módulo 3 — Relacionamento, Ética &amp; Ilícitos (30%)</option>
+                    <option value="modulo1">Apostila Módulo 1 — SFN, Economia &amp; Mat. Financeira (20%)</option>
+                    <option value="modulo4">Apostila Módulo 4 — Inovação: ESG, DeFi, Open Finance &amp; IA (10%)</option>
+                    <option value="plano_sprint_terca">Plano Sprint de Aprovação &amp; Estratégia Pareto 70/30</option>
+                  </select>
+                  <span class="badge badge-cyan" id="apostila-meta-badge">Leitura Executiva</span>
+                </div>
+              </div>
+              <div id="materiais-resumos-container" style="margin-bottom:16px;"></div>
+              <div id="apostila-reader-container" class="markdown-reader"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ABA 4: BANCO DE QUESTÕES (148 QUESTÕES VALIDADAS) -->
+        <section id="view-questoes" class="view-section">
+          <div class="filter-bar">
+            <select id="q-mod-filter" aria-label="Filtrar questões por módulo">
+              <option value="all">Todos os Módulos (148 Questões)</option>
+              <option value="2">Módulo 2 — Produtos &amp; CVM 175 (40% • 60Q)</option>
+              <option value="3">Módulo 3 — Cliente, Ética &amp; Ilícitos (30% • 46Q)</option>
+              <option value="1">Módulo 1 — SFN, Economia &amp; Mat. Fin. (20% • 28Q)</option>
+              <option value="4">Módulo 4 — Inovação: ESG, DeFi &amp; IA (10% • 14Q)</option>
+            </select>
+            <select id="q-origin-filter" aria-label="Filtrar questões por origem">
+              <option value="all">Todas (121 Oficiais Cesgranrio + 27 Inéditas)</option>
+              <option value="oficial">Apenas Oficiais (Portal Cesgranrio / ANBIMA Edu)</option>
+              <option value="inedita">Apenas Inéditas Complementares</option>
+              <option value="wrong">❌ Caderno de Erros (Questões que errei)</option>
+              <option value="fav">⭐ Favoritas / Marcadas para Revisão</option>
+            </select>
+            <select id="q-diff-filter" aria-label="Filtrar questões por dificuldade">
+              <option value="all">Qualquer Dificuldade</option>
+              <option value="Fácil">Fácil / Baixa</option>
+              <option value="Médio">Médio / Média</option>
+              <option value="Difícil">Difícil / Alta</option>
+            </select>
+            <input type="text" id="q-search-input" aria-label="Buscar questão por código ou palavra" placeholder="Buscar código (ex: 000234) ou palavra..." style="min-width:200px; flex:1;">
+          </div>
+
+          <div class="question-layout">
+            <div id="practice-question-container"></div>
+
+            <aside class="card">
+              <div class="card-header">
+                <span class="card-title" style="font-size:0.92rem;">🗺️ Mapa de Questões</span>
+                <span id="q-counter-badge" class="badge badge-blue"></span>
+              </div>
+              <div style="display:flex; gap:8px; margin-bottom:12px;">
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-prev-q" style="flex:1;">◀ Anterior</button>
+                <button type="button" class="btn btn-sm" id="btn-next-q" style="flex:1;">Próxima ▶</button>
+              </div>
+              <div class="q-nav-grid" id="q-nav-grid"></div>
+              <div style="margin-top:12px; font-size:0.75rem; color:var(--muted); display:flex; justify-content:space-between;">
+                <span>🟩 Acerto</span>
+                <span>🟥 Erro</span>
+                <span>🟦 Atual</span>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- ABA 5: MAPAS DE DECISÃO OFICIAIS (CESGRANRIO) -->
+        <section id="view-cases" class="view-section">
+          <div class="alert-banner">
+            <strong>💬 Simulador Oficial de "Mapa de Decisão" (Portal ANBIMA Edu / Cesgranrio):</strong>
+            Reproduz o motor exato das questões interativas da prova CPA: conduza o diálogo por <b>5 etapas ramificadas (Trilha A = +1 ponto | Trilha B = 0 ponto)</b> e, ao final do atendimento, responda às <b>2 Questões Objetivas acopladas</b> com justificativa oficial alternativa por alternativa.
+          </div>
+          <div class="filter-bar">
+            <label for="case-select"><b>Mapa de Decisão:</b></label>
+            <select id="case-select" style="flex:1;"></select>
+            <span id="case-score-badge" class="badge badge-green">Pontos: 0 / 5</span>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-reset-case">🔄 Reiniciar Diálogo</button>
+          </div>
+          <div id="case-stage-container" class="question-box"></div>
+        </section>
+
+        <!-- ABA 6: FLASHCARDS 3D -->
+        <section id="view-flashcards" class="view-section">
+          <div class="filter-bar">
+            <label for="fc-mod-filter"><b>Módulo:</b></label>
+            <select id="fc-mod-filter">
+              <option value="all">Todos os Módulos (78 Flashcards)</option>
+              <option value="2">Módulo 2 — Produtos &amp; CVM 175 (40%)</option>
+              <option value="3">Módulo 3 — Relacionamento, Ética &amp; Ilícitos (30%)</option>
+              <option value="1">Módulo 1 — SFN, Economia &amp; Mat. Fin. (20%)</option>
+              <option value="4">Módulo 4 — Inovação: ESG, DeFi &amp; IA (10%)</option>
+            </select>
+            <span id="fc-counter" class="badge badge-purple"></span>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-shuffle-fc" style="margin-left:auto;">🔀 Embaralhar</button>
+          </div>
+
+          <div class="flashcard-stage">
+            <div class="flashcard-3d" id="flashcard-card">
+              <div class="flashcard-face front">
+                <div class="flashcard-label" id="fc-front-label">PERGUNTA • CLIQUE OU PRESSIONE ESPAÇO PARA VIRAR</div>
+                <div class="flashcard-text" id="fc-front-text">Carregando...</div>
+              </div>
+              <div class="flashcard-face back">
+                <div class="flashcard-label" id="fc-back-label">RESPOSTA OFICIAL ANBIMA</div>
+                <div class="flashcard-text" id="fc-back-text">Carregando...</div>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:center; gap:12px; margin-top:20px;">
+              <button type="button" class="btn btn-secondary" id="btn-fc-prev">◀ Anterior</button>
+              <button type="button" class="btn" id="btn-fc-flip">🔄 Virar Cartão (Espaço)</button>
+              <button type="button" class="btn btn-secondary" id="btn-fc-next">Próximo ▶</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ABA 7: SIMULADO REAL (50 QUESTÕES + BLOQUEIO DE NAVEGAÇÃO) -->
+        <section id="view-simulado" class="view-section">
+          <div id="simulado-intro" class="card question-box">
+            <div class="card-header">
+              <h2 class="card-title" style="font-size:1.35rem;">⏱️ Simulado Oficial CPA ANBIMA (Modo Centro de Testes)</h2>
+              <span class="badge badge-green">Padrão Cesgranrio / FGV</span>
+            </div>
+            <p style="margin-bottom:14px; color:var(--text-secondary);">
+              Simule exatamente a experiência eletrônica da prova presencial da ANBIMA:
+            </p>
+            <ul style="padding-left:22px; margin-bottom:20px; color:var(--text-secondary);">
+              <li><b>Proporção Oficial (20% / 40% / 30% / 10%):</b> Questões sorteadas do banco oficial Cesgranrio + Mapas de Decisão.</li>
+              <li><b>Critério de Aprovação:</b> mínimo de <b>70% de acerto</b> (35/50 no simulado completo ou 14/20 no sprint rápido).</li>
+              <li><b>🔒 Bloqueio Estrito de Navegação:</b> Ao confirmar uma resposta e avançar, <b>a questão anterior fica bloqueada definitivamente</b> (regra oficial do edital CPA).</li>
+              <li><b>🧮 Ferramentas Integradas:</b> Rascunho digital e calculadora financeira HP 12C obrigatória na tela.</li>
+            </ul>
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+              <button type="button" class="btn" id="btn-start-simulado-50" style="font-size:0.96rem; padding:12px 22px;">🚀 Iniciar Exame Oficial Completo (50 Questões • 2h30)</button>
+              <button type="button" class="btn btn-secondary" id="btn-start-simulado-20" style="font-size:0.96rem; padding:12px 22px;">⚡ Iniciar Simulado Sprint (20 Questões • 1h00)</button>
+            </div>
+          </div>
+
+          <div id="simulado-history-card" class="card question-box" style="margin-top:16px; display:none;"></div>
+
+          <div id="simulado-active" style="display:none;" class="question-box">
+            <div class="filter-bar" style="justify-content:space-between;">
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <span class="badge badge-purple" id="sim-q-progress">Questão 1 de 50</span>
+                <span class="badge badge-blue" id="sim-q-mod">Módulo</span>
+                <span class="badge badge-amber">🔒 Sem retorno à questão anterior</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:12px;">
+                <strong id="sim-timer" style="font-family:'JetBrains Mono',monospace; font-size:1.15rem; color:#10b981;">02:30:00</strong>
+                <button type="button" class="btn btn-danger btn-sm" id="btn-finish-simulado-early">Finalizar Prova</button>
+              </div>
+            </div>
+
+            <div id="simulado-question-area" class="card"></div>
+
+            <div class="simulado-tools">
+              <div class="card">
+                <div class="card-header"><span class="card-title" style="font-size:0.9rem;">📝 Bloco de Rascunho Digital (Exame Eletrônico)</span></div>
+                <textarea class="scratchpad" id="sim-scratchpad" placeholder="Anote dados do enunciado: Renda, Reserva Mínima (3x gastos), Parcela máx (20% renda), BDR = (Ação USD * Câmbio)/Paridade..."></textarea>
+              </div>
+              <div id="sim-hp12c-mount"></div>
+            </div>
+          </div>
+
+          <div id="simulado-result" style="display:none;" class="question-box"></div>
+        </section>
+      </main>
     </div>
-
-    <div class="nav-bar-wrap">
-      <nav class="nav-tabs">
-        <button class="tab-btn active" data-tab="dashboard">🚀 Plano Sprint & Painel</button>
-        <button class="tab-btn" data-tab="estudo">📚 Apostila Interativa (38)</button>
-        <button class="tab-btn" data-tab="questoes">🎯 Banco de Questões (148)</button>
-        <button class="tab-btn" data-tab="cases">💬 Mapas de Decisão (10)</button>
-        <button class="tab-btn" data-tab="flashcards">⚡ Flashcards 3D (78)</button>
-        <button class="tab-btn" data-tab="simulado">⏱️ Simulado Real (50Q)</button>
-      </nav>
-    </div>
-  </header>
-
-  <main class="container">
-    <!-- TOP KPI HERO STRIP -->
-    <div class="kpi-strip" id="global-kpi-strip"></div>
-
-    <!-- ABA 1: DASHBOARD & PLANO SPRINT -->
-    <section id="view-dashboard" class="view-section active">
-      <div class="alert-banner">
-        <strong>⚡ Estratégia Pareto 70/30 (Aprovação até Terça-Feira):</strong>
-        O <b>Módulo 2 (40% = 20 questões)</b> + <b>Módulo 3 (30% = 15 questões)</b> somam <b>70% do exame (35 questões — exatamente a nota de corte!)</b>.
-        Todas as <b>116 fichas técnicas oficiais do Portal ANBIMA Edu / Cesgranrio</b> (incluindo justificativas alternativa por alternativa A, B, C e D e os Mapas de Decisão ramificados) já estão integradas abaixo.
-      </div>
-
-      <div class="grid-4" id="dashboard-stats"></div>
-
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">📅 Cronograma Hora-a-Hora (Domingo Noite → Terça)</h2>
-            <span class="badge badge-green" id="sprint-progress-badge">0% concluído</span>
-          </div>
-          <div id="sprint-schedule-list" style="max-height:540px; overflow-y:auto;"></div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">🧠 Cola Oficial de Prova (Revisão Rápida de 15 Minutos)</h2>
-            <span class="badge badge-amber">Fórmulas & Alíquotas</span>
-          </div>
-          <div style="margin-bottom:10px;">
-            <input type="text" id="cola-search" placeholder="Filtrar na cola (ex: Fisher, FGC, CVM 175, PGBL, BDR)..." style="width:100%;">
-          </div>
-          <div id="cola-prova-list" style="max-height:480px; overflow-y:auto;"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ABA 2: ESTUDO GUIADO POR MÓDULO -->
-    <section id="view-estudo" class="view-section">
-      <div class="filter-bar">
-        <label for="study-mod-select"><b>Módulo:</b></label>
-        <select id="study-mod-select">
-          <option value="2">Módulo 2 — Produtos do Mercado Financeiro (40% • PRIORIDADE 1)</option>
-          <option value="3">Módulo 3 — Relacionamento, Finanças Pessoais, Ética e Ilícitos (30% • PRIORIDADE 2)</option>
-          <option value="1">Módulo 1 — Estrutura do SFN, Economia e Matemática Financeira (20%)</option>
-          <option value="4">Módulo 4 — Inovação: ESG, DeFi, Open Finance e IA (10%)</option>
-        </select>
-        <input type="text" id="study-search" placeholder="Buscar conceito, gatilho ou pegadinha (ex: CVM 175, Spoofing, Selic)..." style="flex:1; min-width:220px;">
-        <span id="study-mastered-count" class="badge badge-green"></span>
-      </div>
-      <div id="study-module-header" class="card" style="margin-bottom:16px;"></div>
-      <div id="study-topics-container"></div>
-    </section>
-
-    <!-- ABA 3: BANCO DE QUESTÕES (148 QUESTÕES VALIDADAS) -->
-    <section id="view-questoes" class="view-section">
-      <div class="filter-bar">
-        <select id="q-mod-filter">
-          <option value="all">Todos os Módulos (148 Questões)</option>
-          <option value="2">Módulo 2 — Produtos & CVM 175 (40% • 60Q)</option>
-          <option value="3">Módulo 3 — Cliente, Ética & Ilícitos (30% • 46Q)</option>
-          <option value="1">Módulo 1 — SFN, Economia & Mat. Fin. (20% • 28Q)</option>
-          <option value="4">Módulo 4 — Inovação: ESG, DeFi & IA (10% • 14Q)</option>
-        </select>
-        <select id="q-origin-filter">
-          <option value="all">Todas (121 Oficiais Cesgranrio + 27 Inéditas)</option>
-          <option value="oficial">Apenas Oficiais (Portal Cesgranrio / ANBIMA Edu)</option>
-          <option value="inedita">Apenas Inéditas Complementares</option>
-          <option value="wrong">❌ Caderno de Erros (Questões que errei)</option>
-          <option value="fav">⭐ Favoritas / Marcadas para Revisão</option>
-        </select>
-        <select id="q-diff-filter">
-          <option value="all">Qualquer Dificuldade</option>
-          <option value="Fácil">Fácil / Baixa</option>
-          <option value="Médio">Médio / Média</option>
-          <option value="Difícil">Difícil / Alta</option>
-        </select>
-        <input type="text" id="q-search-input" placeholder="Buscar código (ex: 000234) ou palavra..." style="min-width:200px; flex:1;">
-      </div>
-
-      <div class="question-layout">
-        <div id="practice-question-container"></div>
-
-        <aside class="card">
-          <div class="card-header">
-            <span class="card-title" style="font-size:0.92rem;">🗺️ Mapa de Questões</span>
-            <span id="q-counter-badge" class="badge badge-blue"></span>
-          </div>
-          <div style="display:flex; gap:8px; margin-bottom:12px;">
-            <button class="btn btn-secondary btn-sm" id="btn-prev-q" style="flex:1;">◀ Anterior</button>
-            <button class="btn btn-sm" id="btn-next-q" style="flex:1;">Próxima ▶</button>
-          </div>
-          <div class="q-nav-grid" id="q-nav-grid"></div>
-          <div style="margin-top:12px; font-size:0.75rem; color:var(--muted); display:flex; justify-content:space-between;">
-            <span>🟩 Acerto</span>
-            <span>🟥 Erro</span>
-            <span>🟦 Atual</span>
-          </div>
-        </aside>
-      </div>
-    </section>
-
-    <!-- ABA 4: MAPAS DE DECISÃO OFICIAIS (CESGRANRIO) -->
-    <section id="view-cases" class="view-section">
-      <div class="alert-banner">
-        <strong>💬 Simulador Oficial de "Mapa de Decisão" (Portal ANBIMA Edu / Cesgranrio):</strong>
-        Reproduz o motor exato das questões interativas da prova CPA: conduza o diálogo por <b>5 etapas ramificadas (Trilha A = +1 ponto | Trilha B = 0 ponto)</b> e, ao final do atendimento, responda às <b>2 Questões Objetivas acopladas</b> com justificativa oficial alternativa por alternativa.
-      </div>
-      <div class="filter-bar">
-        <label for="case-select"><b>Mapa de Decisão:</b></label>
-        <select id="case-select" style="flex:1;"></select>
-        <span id="case-score-badge" class="badge badge-green">Pontos: 0 / 5</span>
-        <button class="btn btn-secondary btn-sm" id="btn-reset-case">🔄 Reiniciar Diálogo</button>
-      </div>
-      <div id="case-stage-container" class="question-box"></div>
-    </section>
-
-    <!-- ABA 5: FLASHCARDS 3D -->
-    <section id="view-flashcards" class="view-section">
-      <div class="filter-bar">
-        <label for="fc-mod-filter"><b>Módulo:</b></label>
-        <select id="fc-mod-filter">
-          <option value="all">Todos os Módulos (78 Flashcards)</option>
-          <option value="2">Módulo 2 — Produtos & CVM 175 (40%)</option>
-          <option value="3">Módulo 3 — Relacionamento, Ética & Ilícitos (30%)</option>
-          <option value="1">Módulo 1 — SFN, Economia & Mat. Fin. (20%)</option>
-          <option value="4">Módulo 4 — Inovação: ESG, DeFi & IA (10%)</option>
-        </select>
-        <span id="fc-counter" class="badge badge-purple"></span>
-        <button class="btn btn-secondary btn-sm" id="btn-shuffle-fc" style="margin-left:auto;">🔀 Embaralhar</button>
-      </div>
-
-      <div class="flashcard-stage">
-        <div class="flashcard-3d" id="flashcard-card">
-          <div class="flashcard-face front">
-            <div class="flashcard-label" id="fc-front-label">PERGUNTA • CLIQUE OU PRESSIONE ESPAÇO PARA VIRAR</div>
-            <div class="flashcard-text" id="fc-front-text">Carregando...</div>
-          </div>
-          <div class="flashcard-face back">
-            <div class="flashcard-label" id="fc-back-label">RESPOSTA OFICIAL ANBIMA</div>
-            <div class="flashcard-text" id="fc-back-text">Carregando...</div>
-          </div>
-        </div>
-        <div style="display:flex; justify-content:center; gap:12px; margin-top:20px;">
-          <button class="btn btn-secondary" id="btn-fc-prev">◀ Anterior</button>
-          <button class="btn" id="btn-fc-flip">🔄 Virar Cartão (Espaço)</button>
-          <button class="btn btn-secondary" id="btn-fc-next">Próximo ▶</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ABA 6: SIMULADO REAL (50 QUESTÕES + BLOQUEIO DE NAVEGAÇÃO) -->
-    <section id="view-simulado" class="view-section">
-      <div id="simulado-intro" class="card question-box">
-        <div class="card-header">
-          <h2 class="card-title" style="font-size:1.35rem;">⏱️ Simulado Oficial CPA ANBIMA (Modo Centro de Testes)</h2>
-          <span class="badge badge-green">Padrão Cesgranrio / FGV</span>
-        </div>
-        <p style="margin-bottom:14px; color:var(--text-secondary);">
-          Simule exatamente a experiência eletrônica da prova presencial da ANBIMA:
-        </p>
-        <ul style="padding-left:22px; margin-bottom:20px; color:var(--text-secondary);">
-          <li><b>Proporção Oficial (20% / 40% / 30% / 10%):</b> Questões sorteadas do banco oficial Cesgranrio + Mapas de Decisão.</li>
-          <li><b>Critério de Aprovação:</b> mínimo de <b>70% de acerto</b> (35/50 no simulado completo ou 14/20 no sprint rápido).</li>
-          <li><b>🔒 Bloqueio Estrito de Navegação:</b> Ao confirmar uma resposta e avançar, <b>a questão anterior fica bloqueada definitivamente</b> (regra oficial do edital CPA).</li>
-          <li><b>🧮 Ferramentas Integradas:</b> Rascunho digital e calculadora financeira na tela.</li>
-        </ul>
-        <div style="display:flex; gap:12px; flex-wrap:wrap;">
-          <button class="btn" id="btn-start-simulado-50" style="font-size:0.96rem; padding:12px 22px;">🚀 Iniciar Exame Oficial Completo (50 Questões • 2h30)</button>
-          <button class="btn btn-secondary" id="btn-start-simulado-20" style="font-size:0.96rem; padding:12px 22px;">⚡ Iniciar Simulado Sprint (20 Questões • 1h00)</button>
-        </div>
-      </div>
-
-      <div id="simulado-history-card" class="card question-box" style="margin-top:16px; display:none;"></div>
-
-      <div id="simulado-active" style="display:none;" class="question-box">
-        <div class="filter-bar" style="justify-content:space-between;">
-          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <span class="badge badge-purple" id="sim-q-progress">Questão 1 de 50</span>
-            <span class="badge badge-blue" id="sim-q-mod">Módulo</span>
-            <span class="badge badge-amber">🔒 Sem retorno à questão anterior</span>
-          </div>
-          <div style="display:flex; align-items:center; gap:12px;">
-            <strong id="sim-timer" style="font-family:'JetBrains Mono',monospace; font-size:1.15rem; color:#10b981;">02:30:00</strong>
-            <button class="btn btn-danger btn-sm" id="btn-finish-simulado-early">Finalizar Prova</button>
-          </div>
-        </div>
-
-        <div id="simulado-question-area" class="card"></div>
-
-        <div class="simulado-tools">
-          <div class="card">
-            <div class="card-header"><span class="card-title" style="font-size:0.9rem;">📝 Bloco de Rascunho Digital (Exame Eletrônico)</span></div>
-            <textarea class="scratchpad" id="sim-scratchpad" placeholder="Anote dados do enunciado: Renda, Reserva Mínima (3x gastos), Parcela máx (20% renda), BDR = (Ação USD * Câmbio)/Paridade..."></textarea>
-          </div>
-          <div id="sim-hp12c-mount"></div>
-        </div>
-      </div>
-
-      <div id="simulado-result" style="display:none;" class="question-box"></div>
-    </section>
-  </main>
+  </div>
 
   <div id="hp12c-floating-modal" class="hp12c-modal-backdrop"><div id="hp12c-floating-mount"></div></div>
 
+  <!-- DATA LAYER -->
   <script src="data/modulo1_data.js"></script>
   <script src="data/modulo2_data.js"></script>
   <script src="data/modulo3_data.js"></script>
@@ -256,7 +434,22 @@
   <script src="data/cases_interativos.js"></script>
   <script src="data/mapas_decisao_oficiais.js"></script>
   <script src="data/plano_sprint.js"></script>
+  <script src="data/materiais_estudo_profundos.js"></script>
+
+  <!-- HP 12C FINANCIAL ENGINE -->
   <script src="hp12c.js"></script>
+
+  <!-- MODULAR FRONTEND ARCHITECTURE (src/shared + src/modules barrels) -->
+  <script src="src/shared/api-client/index.js"></script>
+  <script src="src/shared/store/index.js"></script>
+  <script src="src/modules/dashboard/index.js"></script>
+  <script src="src/modules/study/index.js"></script>
+  <script src="src/modules/questions/index.js"></script>
+  <script src="src/modules/decision-maps/index.js"></script>
+  <script src="src/modules/flashcards/index.js"></script>
+  <script src="src/modules/simulator/index.js"></script>
+
+  <!-- MAIN APPLICATION CONTROLLER -->
   <script src="app.js"></script>
 </body>
 </html>

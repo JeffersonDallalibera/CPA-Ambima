@@ -104,8 +104,14 @@ CREATE TABLE IF NOT EXISTS exam_simulations (
 );
 
 CREATE INDEX IF NOT EXISTS idx_topics_module_id ON topics(module_id);
+CREATE INDEX IF NOT EXISTS idx_topics_module_mastered ON topics(module_id, mastered);
 CREATE INDEX IF NOT EXISTS idx_questions_module_id ON questions(module_id);
 CREATE INDEX IF NOT EXISTS idx_questions_oficial ON questions(oficial);
+CREATE INDEX IF NOT EXISTS idx_questions_module_oficial ON questions(module_id, oficial);
+CREATE INDEX IF NOT EXISTS idx_questions_favorita ON questions(favorita) WHERE favorita = TRUE;
+CREATE INDEX IF NOT EXISTS idx_user_answers_correta ON user_answers(correta);
+CREATE INDEX IF NOT EXISTS idx_decision_maps_completed ON decision_maps(completed);
 CREATE INDEX IF NOT EXISTS idx_flashcards_module_id ON flashcards(module_id);
 CREATE INDEX IF NOT EXISTS idx_sprint_blocks_ordem ON sprint_blocks(ordem);
 CREATE INDEX IF NOT EXISTS idx_cola_cards_ordem ON cola_cards(ordem);
+CREATE INDEX IF NOT EXISTS idx_exam_simulations_created_at ON exam_simulations(created_at DESC, id DESC);

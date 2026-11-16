@@ -152,6 +152,31 @@ def run_tests():
         errors.append(msg)
         conn.rollback()
 
+    # 5. Verify PostgreSQL performance indexes exist
+    try:
+        cur.execute("SELECT indexname FROM pg_indexes WHERE schemaname = 'public';")
+        idx_names = {r[0] for r in cur.fetchall()}
+        required_indexes = {
+            "idx_topics_module_id",
+            "idx_questions_module_id",
+            "idx_questions_oficial",
+            "idx_flashcards_module_id",
+            "idx_sprint_blocks_ordem",
+            "idx_cola_cards_ordem",
+        }
+        missing_idx = required_indexes - idx_names
+        if not missing_idx:
+            print(f"[PASS] 5. Índices PostgreSQL verificados ({len(idx_names)} índices ativos no schema public).")
+        else:
+            msg = f"Índices PostgreSQL ausentes: {sorted(missing_idx)}"
+            print(f"[FAIL] 5. {msg}")
+            errors.append(msg)
+    except Exception as e:
+        msg = f"Erro ao verificar índices no PostgreSQL: {e}"
+        print(f"[FAIL] 5. {msg}")
+        errors.append(msg)
+        conn.rollback()
+
     cur.close()
     conn.close()
 

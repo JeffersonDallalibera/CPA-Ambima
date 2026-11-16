@@ -1,22 +1,156 @@
 import os
+import re
 from pathlib import Path
 from flask import Flask, jsonify, request, send_from_directory
 import psycopg2
+from psycopg2.pool import ThreadedConnectionPool
 from psycopg2.extras import RealDictCursor, Json
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
 app = Flask(__name__, static_folder=str(ROOT_DIR), static_url_path="")
 
+DB_CONFIG = {
+    "host": os.environ.get("PGHOST", os.environ.get("DB_HOST", "localhost")),
+    "port": int(os.environ.get("PGPORT", os.environ.get("DB_PORT", 5432))),
+    "dbname": os.environ.get("PGDATABASE", os.environ.get("DB_NAME", "cpa-ambima")),
+    "user": os.environ.get("PGUSER", os.environ.get("DB_USER", "postgres")),
+    "password": os.environ.get("PGPASSWORD", os.environ.get("DB_PASSWORD", "postgres")),
+}
+
+ANBIMA_WEIGHTS = {
+    1: 0.20,
+    2: 0.40,
+    3: 0.30,
+    4: 0.10,
+}
+
+STUDY_MATERIALS_MANIFEST = [
+    {
+        "id": "modulo1",
+        "module_id": 1,
+        "slug": "modulo1_sfn_economia",
+        "rel_path": "modulos/modulo1_sfn_economia.md",
+        "default_title": "Módulo 1: Estrutura e Dinâmica do Sistema Financeiro Nacional (SFN)",
+        "peso": "20%",
+        "questoes_prova": 10,
+    },
+    {
+        "id": "modulo2",
+        "module_id": 2,
+        "slug": "modulo2_produtos",
+        "rel_path": "modulos/modulo2_produtos.md",
+        "default_title": "Módulo 2: Produtos do Mercado Financeiro (CPA ANBIMA)",
+        "peso": "40%",
+        "questoes_prova": 20,
+    },
+    {
+        "id": "modulo3",
+        "module_id": 3,
+        "slug": "modulo3_relacionamento_etica",
+        "rel_path": "modulos/modulo3_relacionamento_etica.md",
+        "default_title": "Módulo 3: Relacionamento com o Cliente, Finanças Pessoais e Ética",
+        "peso": "30%",
+        "questoes_prova": 15,
+    },
+    {
+        "id": "modulo4",
+        "module_id": 4,
+        "slug": "modulo4_inovacao",
+        "rel_path": "modulos/modulo4_inovacao.md",
+        "default_title": "Módulo 4: Inovação e Desenvolvimento de Mercado (ESG, DeFi, Open Finance e IA)",
+        "peso": "10%",
+        "questoes_prova": 5,
+    },
+    {
+        "id": "plano_sprint_terca",
+        "module_id": 0,
+        "slug": "PLANO_SPRINT_TERCA",
+        "rel_path": "PLANO_SPRINT_TERCA.md",
+        "default_title": "Plano Sprint de Aprovação Intensiva — CPA ANBIMA",
+        "peso": "100%",
+        "questoes_prova": 50,
+    },
+]
+
+_db_pool = None
+
+
+def get_db_pool() -> ThreadedConnectionPool:
+    """Initializes or returns the singleton PostgreSQL ThreadedConnectionPool."""
+    global _db_pool
+    if _db_pool is None or _db_pool.closed:
+        _db_pool = ThreadedConnectionPool(
+            minconn=int(os.environ.get("PGPOOL_MIN", 1)),
+            maxconn=int(os.environ.get("PGPOOL_MAX", 20)),
+            **DB_CONFIG,
+        )
+    return _db_pool
+
+
+class PooledConnection:
+    """
+    Lightweight proxy around a psycopg2 connection checked out from ThreadedConnectionPool.
+    Calling .close() safely rolls back any uncommitted state and returns the connection to the pool.
+    """
+
+    def __init__(self, pool: ThreadedConnectionPool, raw_conn):
+        self._pool = pool
+        self._conn = raw_conn
+        self._returned = False
+
+    def cursor(self, *args, **kwargs):
+        return self._conn.cursor(*args, **kwargs)
+
+    def commit(self):
+        return self._conn.commit()
+
+    def rollback(self):
+        return self._conn.rollback()
+
+    def close(self):
+        if not self._returned:
+            self._returned = True
+            try:
+                if not self._conn.closed and self._conn.info.transaction_status not in (
+                    psycopg2.extensions.TRANSACTION_STATUS_IDLE,
+                ):
+                    self._conn.rollback()
+            except Exception:
+                pass
+            try:
+                self._pool.putconn(self._conn, close=bool(self._conn.closed))
+            except Exception:
+                try:
+                    self._conn.close()
+                except Exception:
+                    pass
+
+    def __enter__(self):
+        return self._conn.__enter__()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return self._conn.__exit__(exc_type, exc_val, exc_tb)
+
+    def __getattr__(self, name):
+        return getattr(self._conn, name)
+
 
 def get_db_connection():
-    return psycopg2.connect(
-        host=os.environ.get("PGHOST", os.environ.get("DB_HOST", "localhost")),
-        port=int(os.environ.get("PGPORT", os.environ.get("DB_PORT", 5432))),
-        dbname=os.environ.get("PGDATABASE", os.environ.get("DB_NAME", "cpa-ambima")),
-        user=os.environ.get("PGUSER", os.environ.get("DB_USER", "postgres")),
-        password=os.environ.get("PGPASSWORD", os.environ.get("DB_PASSWORD", "postgres")),
-    )
+    """Acquires a connection from the PostgreSQL ThreadedConnectionPool."""
+    pool = get_db_pool()
+    raw_conn = pool.getconn()
+    if raw_conn.closed:
+        pool.putconn(raw_conn, close=True)
+        raw_conn = psycopg2.connect(**DB_CONFIG)
+        return raw_conn
+    return PooledConnection(pool, raw_conn)
+
+
+def release_db_connection(conn):
+    """Returns a connection back to the pool."""
+    if conn is not None:
+        conn.close()
 
 
 def fetch_counts(cur):
@@ -27,9 +161,11 @@ def fetch_counts(cur):
             (SELECT COUNT(*) FROM topics) AS topics,
             (SELECT COUNT(*) FROM questions) AS questions,
             (SELECT COUNT(*) FROM questions WHERE oficial = TRUE) AS official_questions,
+            (SELECT COUNT(*) FROM questions WHERE oficial = FALSE) AS ineditas_questions,
             (SELECT COUNT(*) FROM decision_maps) AS decision_maps,
             (SELECT COUNT(*) FROM flashcards) AS flashcards,
-            (SELECT COUNT(*) FROM sprint_blocks) AS sprint_blocks
+            (SELECT COUNT(*) FROM sprint_blocks) AS sprint_blocks,
+            (SELECT COUNT(*) FROM cola_cards) AS cola_cards
         """
     )
     row = cur.fetchone()
@@ -38,9 +174,11 @@ def fetch_counts(cur):
         "topics": int(row["topics"]),
         "questions": int(row["questions"]),
         "official_questions": int(row["official_questions"]),
+        "ineditas_questions": int(row["ineditas_questions"]),
         "decision_maps": int(row["decision_maps"]),
         "flashcards": int(row["flashcards"]),
         "sprint_blocks": int(row["sprint_blocks"]),
+        "cola_cards": int(row["cola_cards"]),
     }
 
 
@@ -65,6 +203,49 @@ def format_simulation(row):
     }
 
 
+def parse_markdown_sections(md_text: str):
+    """Splits a Markdown document into structured H2 sections for interactive reading."""
+    lines = md_text.splitlines()
+    sections = []
+    current_title = "Visão Geral"
+    current_lines = []
+
+    for line in lines:
+        m = re.match(r"^##\s+(.+)$", line.strip())
+        if m:
+            if current_lines:
+                content_block = "\n".join(current_lines).strip()
+                if content_block:
+                    sections.append(
+                        {
+                            "index": len(sections) + 1,
+                            "title": current_title,
+                            "titulo": current_title,
+                            "content": content_block,
+                            "conteudo": content_block,
+                        }
+                    )
+            current_title = m.group(1).strip()
+            current_lines = [line]
+        else:
+            current_lines.append(line)
+
+    if current_lines:
+        content_block = "\n".join(current_lines).strip()
+        if content_block:
+            sections.append(
+                {
+                    "index": len(sections) + 1,
+                    "title": current_title,
+                    "titulo": current_title,
+                    "content": content_block,
+                    "conteudo": content_block,
+                }
+            )
+
+    return sections
+
+
 @app.after_request
 def add_cors_headers(response):
     response.headers["Access-Control-Allow-Origin"] = "*"
@@ -84,8 +265,13 @@ def api_health():
         return jsonify(
             {
                 "status": "ok",
-                "database": os.environ.get("PGDATABASE", os.environ.get("DB_NAME", "cpa-ambima")),
-                "engine": "PostgreSQL 16 + Python Flask",
+                "database": DB_CONFIG["dbname"],
+                "engine": "PostgreSQL 16 + Python Flask (ThreadedConnectionPool)",
+                "pool": {
+                    "type": "ThreadedConnectionPool",
+                    "host": DB_CONFIG["host"],
+                    "port": DB_CONFIG["port"],
+                },
                 "counts": counts,
             }
         )
@@ -313,6 +499,406 @@ def api_maps():
         conn.close()
 
 
+@app.route("/api/analytics", methods=["GET"])
+def api_analytics():
+    """
+    Calculates executive diagnostic metrics directly in PostgreSQL (cpa-ambima):
+    - Per-module breakdown: weight (20%/40%/30%/10%), total questions, answered, hits,
+      accuracy %, mastered topics, module readiness score.
+    - Global ANBIMA Readiness Score weighted by 20% / 40% / 30% / 10%.
+    - Priority topics for review ordered by ANBIMA module weight and topic priority.
+    """
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                WITH q_stats AS (
+                    SELECT
+                        q.module_id,
+                        COUNT(*) AS total_questions,
+                        COUNT(*) FILTER (WHERE q.oficial = TRUE) AS official_questions,
+                        COUNT(ua.question_id) AS answered_questions,
+                        COUNT(ua.question_id) FILTER (WHERE ua.correta = TRUE) AS correct_answers,
+                        COUNT(*) FILTER (WHERE q.favorita = TRUE) AS favorite_questions
+                    FROM questions q
+                    LEFT JOIN user_answers ua ON ua.question_id = q.id
+                    GROUP BY q.module_id
+                ),
+                t_stats AS (
+                    SELECT
+                        t.module_id,
+                        COUNT(*) AS total_topics,
+                        COUNT(*) FILTER (WHERE t.mastered = TRUE) AS mastered_topics
+                    FROM topics t
+                    GROUP BY t.module_id
+                ),
+                fc_stats AS (
+                    SELECT
+                        f.module_id,
+                        COUNT(*) AS total_flashcards,
+                        COUNT(*) FILTER (WHERE f.mastered = TRUE) AS mastered_flashcards
+                    FROM flashcards f
+                    GROUP BY f.module_id
+                )
+                SELECT
+                    m.id,
+                    m.titulo,
+                    m.peso,
+                    m.questoes_prova,
+                    CASE m.id
+                        WHEN 1 THEN 20
+                        WHEN 2 THEN 40
+                        WHEN 3 THEN 30
+                        WHEN 4 THEN 10
+                        ELSE 25
+                    END AS weight_pct,
+                    CASE m.id
+                        WHEN 1 THEN 0.20
+                        WHEN 2 THEN 0.40
+                        WHEN 3 THEN 0.30
+                        WHEN 4 THEN 0.10
+                        ELSE 0.25
+                    END AS weight_decimal,
+                    COALESCE(qs.total_questions, 0) AS total_questions,
+                    COALESCE(qs.official_questions, 0) AS official_questions,
+                    COALESCE(qs.answered_questions, 0) AS answered_questions,
+                    COALESCE(qs.correct_answers, 0) AS correct_answers,
+                    COALESCE(qs.favorite_questions, 0) AS favorite_questions,
+                    CASE
+                        WHEN COALESCE(qs.answered_questions, 0) > 0
+                        THEN ROUND((qs.correct_answers::NUMERIC / qs.answered_questions::NUMERIC) * 100, 1)
+                        ELSE 0.0
+                    END AS accuracy_pct,
+                    CASE
+                        WHEN COALESCE(qs.total_questions, 0) > 0
+                        THEN ROUND((qs.answered_questions::NUMERIC / qs.total_questions::NUMERIC) * 100, 1)
+                        ELSE 0.0
+                    END AS coverage_pct,
+                    COALESCE(ts.total_topics, 0) AS total_topics,
+                    COALESCE(ts.mastered_topics, 0) AS mastered_topics,
+                    CASE
+                        WHEN COALESCE(ts.total_topics, 0) > 0
+                        THEN ROUND((ts.mastered_topics::NUMERIC / ts.total_topics::NUMERIC) * 100, 1)
+                        ELSE 0.0
+                    END AS topics_mastery_pct,
+                    COALESCE(fs.total_flashcards, 0) AS total_flashcards,
+                    COALESCE(fs.mastered_flashcards, 0) AS mastered_flashcards
+                FROM modules m
+                LEFT JOIN q_stats qs ON qs.module_id = m.id
+                LEFT JOIN t_stats ts ON ts.module_id = m.id
+                LEFT JOIN fc_stats fs ON fs.module_id = m.id
+                ORDER BY m.id ASC;
+                """
+            )
+            mod_rows = cur.fetchall()
+
+            # Priority topics for review (unmastered first, weighted by ANBIMA module weight 40%->30%->20%->10%)
+            cur.execute(
+                """
+                SELECT
+                    t.key,
+                    t.module_id,
+                    m.titulo AS modulo_titulo,
+                    m.peso AS peso_modulo,
+                    t.codigo,
+                    t.titulo,
+                    t.prioridade,
+                    t.mastered,
+                    t.gatilhos_prova,
+                    t.pegadinhas
+                FROM topics t
+                JOIN modules m ON m.id = t.module_id
+                ORDER BY
+                    t.mastered ASC,
+                    CASE
+                        WHEN LOWER(COALESCE(t.prioridade, '')) LIKE 'alta%' OR LOWER(COALESCE(t.prioridade, '')) LIKE 'm%xima%' THEN 1
+                        WHEN LOWER(COALESCE(t.prioridade, '')) LIKE 'm%dia%' THEN 2
+                        ELSE 3
+                    END ASC,
+                    CASE t.module_id
+                        WHEN 2 THEN 1
+                        WHEN 3 THEN 2
+                        WHEN 1 THEN 3
+                        WHEN 4 THEN 4
+                        ELSE 5
+                    END ASC,
+                    t.codigo ASC
+                LIMIT 15;
+                """
+            )
+            priority_rows = cur.fetchall()
+
+            cur.execute(
+                """
+                SELECT
+                    (SELECT COUNT(*) FROM decision_maps) AS total_maps,
+                    (SELECT COUNT(*) FROM decision_maps WHERE completed = TRUE) AS completed_maps,
+                    (SELECT COUNT(*) FROM sprint_blocks) AS total_sprint_blocks,
+                    (SELECT COUNT(*) FROM sprint_blocks WHERE concluido = TRUE) AS completed_sprint_blocks,
+                    (SELECT COUNT(*) FROM exam_simulations) AS total_simulations,
+                    COALESCE((SELECT ROUND(AVG(score_pct)::NUMERIC, 1) FROM exam_simulations), 0.0) AS avg_simulation_score
+                """
+            )
+            extra_stats = cur.fetchone()
+
+        modules_diagnostics = []
+        weighted_readiness_sum = 0.0
+        weighted_accuracy_sum = 0.0
+
+        total_q_all = 0
+        official_q_all = 0
+        answered_q_all = 0
+        correct_q_all = 0
+        total_t_all = 0
+        mastered_t_all = 0
+
+        for r in mod_rows:
+            mod_id = int(r["id"])
+            w_pct = int(r["weight_pct"])
+            w_dec = float(r["weight_decimal"])
+            tot_q = int(r["total_questions"])
+            off_q = int(r["official_questions"])
+            ans_q = int(r["answered_questions"])
+            cor_q = int(r["correct_answers"])
+            acc_pct = float(r["accuracy_pct"])
+            cov_pct = float(r["coverage_pct"])
+            tot_t = int(r["total_topics"])
+            mas_t = int(r["mastered_topics"])
+            t_mas_pct = float(r["topics_mastery_pct"])
+
+            # Module readiness blends accuracy (70% weight when questions answered) + topic mastery (15%) + coverage (15%)
+            if ans_q > 0:
+                mod_readiness = round((acc_pct * 0.70) + (t_mas_pct * 0.15) + (cov_pct * 0.15), 1)
+            else:
+                mod_readiness = round(t_mas_pct * 0.30, 1)
+
+            weighted_contrib = round(mod_readiness * w_dec, 2)
+            weighted_readiness_sum += mod_readiness * w_dec
+            weighted_accuracy_sum += acc_pct * w_dec
+
+            total_q_all += tot_q
+            official_q_all += off_q
+            answered_q_all += ans_q
+            correct_q_all += cor_q
+            total_t_all += tot_t
+            mastered_t_all += mas_t
+
+            if acc_pct >= 75.0 and ans_q >= 5:
+                mod_status = "DOMINADO"
+            elif acc_pct >= 60.0 or mas_t > 0 or ans_q > 0:
+                mod_status = "EM_EVOLUCAO"
+            else:
+                mod_status = "PRIORITARIO"
+
+            modules_diagnostics.append(
+                {
+                    "id": mod_id,
+                    "moduleId": mod_id,
+                    "module_id": mod_id,
+                    "titulo": r["titulo"],
+                    "title": r["titulo"],
+                    "peso": r["peso"],
+                    "weightPct": w_pct,
+                    "weight_pct": w_pct,
+                    "weightDecimal": w_dec,
+                    "weight_decimal": w_dec,
+                    "questoesProva": int(r["questoes_prova"]),
+                    "questoes_prova": int(r["questoes_prova"]),
+                    "totalQuestions": tot_q,
+                    "total_questions": tot_q,
+                    "officialQuestions": off_q,
+                    "official_questions": off_q,
+                    "answeredQuestions": ans_q,
+                    "answered_questions": ans_q,
+                    "respondidas": ans_q,
+                    "correctAnswers": cor_q,
+                    "correct_answers": cor_q,
+                    "acertos": cor_q,
+                    "accuracyPct": acc_pct,
+                    "accuracy_pct": acc_pct,
+                    "taxaAcerto": acc_pct,
+                    "taxa_acerto": acc_pct,
+                    "coveragePct": cov_pct,
+                    "coverage_pct": cov_pct,
+                    "totalTopics": tot_t,
+                    "total_topics": tot_t,
+                    "masteredTopics": mas_t,
+                    "mastered_topics": mas_t,
+                    "topicosDominados": mas_t,
+                    "topicos_dominados": mas_t,
+                    "topicsMasteryPct": t_mas_pct,
+                    "topics_mastery_pct": t_mas_pct,
+                    "readinessScore": mod_readiness,
+                    "readiness_score": mod_readiness,
+                    "weightedContribution": weighted_contrib,
+                    "weighted_contribution": weighted_contrib,
+                    "status": mod_status,
+                }
+            )
+
+        overall_acc_pct = (
+            round((correct_q_all / answered_q_all) * 100.0, 1) if answered_q_all > 0 else 0.0
+        )
+        overall_topics_pct = (
+            round((mastered_t_all / total_t_all) * 100.0, 1) if total_t_all > 0 else 0.0
+        )
+        readiness_score = round(weighted_readiness_sum, 1)
+        weighted_accuracy_pct = round(weighted_accuracy_sum, 1)
+
+        priority_topics = [
+            {
+                "key": pr["key"],
+                "moduleId": int(pr["module_id"]),
+                "module_id": int(pr["module_id"]),
+                "moduloTitulo": pr["modulo_titulo"],
+                "modulo_titulo": pr["modulo_titulo"],
+                "pesoModulo": pr["peso_modulo"],
+                "peso_modulo": pr["peso_modulo"],
+                "codigo": pr["codigo"],
+                "titulo": pr["titulo"],
+                "prioridade": pr["prioridade"] or "Alta",
+                "mastered": bool(pr["mastered"]),
+                "gatilhosProva": pr["gatilhos_prova"] or [],
+                "gatilhos_prova": pr["gatilhos_prova"] or [],
+                "pegadinhas": pr["pegadinhas"] or [],
+            }
+            for pr in priority_rows
+        ]
+
+        summary = {
+            "totalQuestions": total_q_all,
+            "total_questions": total_q_all,
+            "officialQuestions": official_q_all,
+            "official_questions": official_q_all,
+            "answeredQuestions": answered_q_all,
+            "answered_questions": answered_q_all,
+            "correctAnswers": correct_q_all,
+            "correct_answers": correct_q_all,
+            "accuracyPct": overall_acc_pct,
+            "accuracy_pct": overall_acc_pct,
+            "weightedAccuracyPct": weighted_accuracy_pct,
+            "weighted_accuracy_pct": weighted_accuracy_pct,
+            "readinessScore": readiness_score,
+            "readiness_score": readiness_score,
+            "totalTopics": total_t_all,
+            "total_topics": total_t_all,
+            "masteredTopics": mastered_t_all,
+            "mastered_topics": mastered_t_all,
+            "topicsMasteryPct": overall_topics_pct,
+            "topics_mastery_pct": overall_topics_pct,
+            "totalMaps": int(extra_stats["total_maps"]),
+            "total_maps": int(extra_stats["total_maps"]),
+            "completedMaps": int(extra_stats["completed_maps"]),
+            "completed_maps": int(extra_stats["completed_maps"]),
+            "totalSprintBlocks": int(extra_stats["total_sprint_blocks"]),
+            "total_sprint_blocks": int(extra_stats["total_sprint_blocks"]),
+            "completedSprintBlocks": int(extra_stats["completed_sprint_blocks"]),
+            "completed_sprint_blocks": int(extra_stats["completed_sprint_blocks"]),
+            "totalSimulations": int(extra_stats["total_simulations"]),
+            "total_simulations": int(extra_stats["total_simulations"]),
+            "avgSimulationScore": float(extra_stats["avg_simulation_score"]),
+            "avg_simulation_score": float(extra_stats["avg_simulation_score"]),
+        }
+
+        return jsonify(
+            {
+                "status": "ok",
+                "database": DB_CONFIG["dbname"],
+                "readinessScore": readiness_score,
+                "readiness_score": readiness_score,
+                "weightedAccuracyPct": weighted_accuracy_pct,
+                "weighted_accuracy_pct": weighted_accuracy_pct,
+                "overallAccuracyPct": overall_acc_pct,
+                "overall_accuracy_pct": overall_acc_pct,
+                "targetScorePct": 70.0,
+                "target_score_pct": 70.0,
+                "readyForExam": readiness_score >= 70.0,
+                "ready_for_exam": readiness_score >= 70.0,
+                "weights": {"1": 20, "2": 40, "3": 30, "4": 10},
+                "summary": summary,
+                "totals": summary,
+                "modules": modules_diagnostics,
+                "byModule": modules_diagnostics,
+                "moduleDiagnostics": modules_diagnostics,
+                "priorityTopics": priority_topics,
+                "priority_topics": priority_topics,
+                "topicosPrioritarios": priority_topics,
+            }
+        )
+    finally:
+        conn.close()
+
+
+@app.route("/api/study-materials", methods=["GET"])
+def api_study_materials():
+    """
+    Returns the complete Markdown study guides (modulos/modulo1..4 + PLANO_SPRINT_TERCA.md)
+    structured in JSON for direct reading in the corporate financial interface.
+    """
+    materials = []
+    by_id = {}
+
+    for item in STUDY_MATERIALS_MANIFEST:
+        file_path = ROOT_DIR / item["rel_path"]
+        content = ""
+        if file_path.exists():
+            content = file_path.read_text(encoding="utf-8")
+
+        heading_match = re.search(r"^#\s+(.+)$", content, flags=re.MULTILINE)
+        title = heading_match.group(1).strip() if heading_match else item["default_title"]
+        sections = parse_markdown_sections(content) if content else []
+        words = len(content.split())
+        lines = len(content.splitlines())
+        reading_time_min = max(1, round(words / 200))
+
+        doc = {
+            "id": item["id"],
+            "moduleId": item["module_id"],
+            "module_id": item["module_id"],
+            "slug": item["slug"],
+            "filename": item["rel_path"],
+            "path": item["rel_path"],
+            "title": title,
+            "titulo": title,
+            "peso": item["peso"],
+            "questoesProva": item["questoes_prova"],
+            "questoes_prova": item["questoes_prova"],
+            "content": content,
+            "markdown": content,
+            "conteudo": content,
+            "sections": sections,
+            "secoes": sections,
+            "wordCount": words,
+            "word_count": words,
+            "lineCount": lines,
+            "line_count": lines,
+            "readingTimeMinutes": reading_time_min,
+            "reading_time_minutes": reading_time_min,
+        }
+        materials.append(doc)
+        by_id[item["id"]] = doc
+        by_id[item["slug"]] = doc
+        by_id[item["rel_path"]] = doc
+        by_id[Path(item["rel_path"]).name] = doc
+        if item["module_id"]:
+            by_id[str(item["module_id"])] = doc
+        else:
+            by_id["sprint"] = doc
+
+    return jsonify(
+        {
+            "status": "ok",
+            "total": len(materials),
+            "materials": materials,
+            "apostilas": materials,
+            "items": materials,
+            "byId": by_id,
+            "by_id": by_id,
+        }
+    )
+
+
 @app.route("/api/topics/toggle", methods=["POST"])
 def api_topics_toggle():
     data = request.get_json(silent=True) or {}
@@ -501,6 +1087,21 @@ def api_simulations_create():
         return jsonify(res), 201
     finally:
         conn.close()
+
+
+@app.route("/src/<path:filename>", methods=["GET"])
+def serve_src_files(filename):
+    return send_from_directory(ROOT_DIR / "src", filename)
+
+
+@app.route("/data/<path:filename>", methods=["GET"])
+def serve_data_files(filename):
+    return send_from_directory(ROOT_DIR / "data", filename)
+
+
+@app.route("/modulos/<path:filename>", methods=["GET"])
+def serve_modulos_files(filename):
+    return send_from_directory(ROOT_DIR / "modulos", filename)
 
 
 @app.route("/", methods=["GET"])

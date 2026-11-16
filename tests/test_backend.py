@@ -5,29 +5,35 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 
 from psycopg2.extras import RealDictCursor
-from backend.app import app, get_db_connection
+from backend.app import app, get_db_connection, get_db_pool
 
 
 def run_tests():
     client = app.test_client()
 
-    print("=== [1/5] Testing GET /api/health ===")
+    print("=== [1/6] Testing GET /api/health & ThreadedConnectionPool ===")
+    pool = get_db_pool()
+    assert pool is not None and not pool.closed, "ThreadedConnectionPool is not initialized or is closed"
+
     res = client.get("/api/health")
     assert res.status_code == 200, f"Expected 200 on /api/health, got {res.status_code}"
     health = res.get_json()
     assert health.get("status") == "ok", f"Unexpected health status: {health}"
     assert health.get("database") == "cpa-ambima", f"Expected database 'cpa-ambima', got {health.get('database')}"
+    assert health.get("pool", {}).get("type") == "ThreadedConnectionPool", f"Expected ThreadedConnectionPool in health.pool: {health.get('pool')}"
     counts = health.get("counts", {})
+    assert counts.get("modules") == 4, f"Expected 4 modules, got {counts.get('modules')}"
+    assert counts.get("topics") == 38, f"Expected 38 topics, got {counts.get('topics')}"
     assert counts.get("questions") == 148, f"Expected 148 questions, got {counts.get('questions')}"
     assert counts.get("official_questions") == 121, f"Expected 121 official_questions, got {counts.get('official_questions')}"
-    assert counts.get("modules", 0) >= 3, f"Expected >= 3 modules, got {counts.get('modules')}"
-    assert counts.get("topics", 0) > 0, f"Expected > 0 topics, got {counts.get('topics')}"
-    assert counts.get("decision_maps", 0) > 0, f"Expected > 0 decision_maps, got {counts.get('decision_maps')}"
-    assert counts.get("flashcards", 0) > 0, f"Expected > 0 flashcards, got {counts.get('flashcards')}"
-    assert counts.get("sprint_blocks", 0) > 0, f"Expected > 0 sprint_blocks, got {counts.get('sprint_blocks')}"
+    assert counts.get("ineditas_questions") == 27, f"Expected 27 ineditas_questions, got {counts.get('ineditas_questions')}"
+    assert counts.get("decision_maps") == 10, f"Expected 10 decision_maps, got {counts.get('decision_maps')}"
+    assert counts.get("flashcards") == 78, f"Expected 78 flashcards, got {counts.get('flashcards')}"
+    assert counts.get("sprint_blocks") == 16, f"Expected 16 sprint_blocks, got {counts.get('sprint_blocks')}"
+    assert counts.get("cola_cards") == 10, f"Expected 10 cola_cards, got {counts.get('cola_cards')}"
     print(f"PASS: /api/health -> {counts}")
 
-    print("=== [2/5] Testing GET /api/modules & GET /api/maps ===")
+    print("=== [2/6] Testing GET /api/modules & GET /api/maps ===")
     res_mod = client.get("/api/modules")
     assert res_mod.status_code == 200, f"Expected 200 on /api/modules, got {res_mod.status_code}"
     modules = res_mod.get_json()
@@ -75,6 +81,36 @@ def run_tests():
         assert isinstance(dm.get("questoesObjetivas"), list) and len(dm.get("questoesObjetivas")) > 0
     print(f"PASS: /api/maps -> {len(maps)} decision maps verified")
 
+    print("=== [3/6] Testing GET /api/analytics & GET /api/study-materials ===")
+    res_analytics = client.get("/api/analytics")
+    assert res_analytics.status_code == 200, f"Expected 200 on /api/analytics, got {res_analytics.status_code}"
+    analytics = res_analytics.get_json()
+    assert analytics.get("status") == "ok" and analytics.get("database") == "cpa-ambima"
+    assert isinstance(analytics.get("readinessScore"), (int, float)), "readinessScore must be numeric"
+    assert analytics.get("weights") == {"1": 20, "2": 40, "3": 30, "4": 10}, f"Unexpected ANBIMA weights: {analytics.get('weights')}"
+    mod_diag = analytics.get("modules", [])
+    assert isinstance(mod_diag, list) and len(mod_diag) == 4, f"Expected 4 modules in analytics, got {len(mod_diag)}"
+    expected_weights = {1: 20, 2: 40, 3: 30, 4: 10}
+    for m in mod_diag:
+        assert m.get("weightPct") == expected_weights.get(m.get("id")), f"Weight mismatch for module {m.get('id')}"
+        assert "totalQuestions" in m and "answeredQuestions" in m and "accuracyPct" in m and "readinessScore" in m
+    priority_topics = analytics.get("priorityTopics", [])
+    assert isinstance(priority_topics, list) and len(priority_topics) > 0, "Expected non-empty priorityTopics in /api/analytics"
+    print(f"PASS: /api/analytics -> readinessScore={analytics.get('readinessScore')}%, {len(mod_diag)} modules, {len(priority_topics)} priority topics")
+
+    res_mat = client.get("/api/study-materials")
+    assert res_mat.status_code == 200, f"Expected 200 on /api/study-materials, got {res_mat.status_code}"
+    mat_json = res_mat.get_json()
+    assert mat_json.get("status") == "ok" and mat_json.get("total") == 5, f"Expected 5 study materials, got {mat_json.get('total')}"
+    materials = mat_json.get("materials", [])
+    assert len(materials) == 5
+    by_id = mat_json.get("byId", {})
+    for expected_key in ["modulo1", "modulo2", "modulo3", "modulo4", "plano_sprint_terca"]:
+        assert expected_key in by_id, f"Missing '{expected_key}' in /api/study-materials byId"
+        assert len(by_id[expected_key].get("content", "")) > 500, f"Content too short for '{expected_key}'"
+        assert len(by_id[expected_key].get("sections", [])) > 0, f"No parsed sections for '{expected_key}'"
+    print(f"PASS: /api/study-materials -> {len(materials)} complete Markdown study guides verified")
+
     # Inspect initial state in PostgreSQL so we can restore it cleanly at the end
     conn = get_db_connection()
     created_sim_id = None
@@ -96,7 +132,7 @@ def run_tests():
             orig_sprint = cur.fetchone()
             first_sprint_id = orig_sprint["id"]
 
-        print("=== [3/5] Testing POST persistence endpoints ===")
+        print("=== [4/6] Testing POST persistence endpoints ===")
         # 1. POST /api/topics/toggle
         res_toggle_topic = client.post("/api/topics/toggle", json={"key": first_topic_key, "mastered": True})
         assert res_toggle_topic.status_code == 200, f"/api/topics/toggle failed: {res_toggle_topic.get_data(as_text=True)}"
@@ -158,7 +194,7 @@ def run_tests():
         created_sim_id = sim_json["id"]
         print(f"PASS: All 6 POST endpoints succeeded (created simulation id={created_sim_id})")
 
-        print("=== [4/5] Verifying persistence via GET /api/bootstrap ===")
+        print("=== [5/6] Verifying persistence via GET /api/bootstrap & /api/analytics ===")
         res_boot = client.get("/api/bootstrap")
         assert res_boot.status_code == 200, f"/api/bootstrap failed: {res_boot.status_code}"
         boot = res_boot.get_json()
@@ -175,10 +211,16 @@ def run_tests():
 
         sim_ids = [s["id"] for s in boot.get("simulations", [])]
         assert created_sim_id in sim_ids, f"Created simulation {created_sim_id} not found in /api/bootstrap simulations"
-        print("PASS: GET /api/bootstrap confirmed 100% persistence in PostgreSQL 'cpa-ambima'")
+
+        res_analytics_after = client.get("/api/analytics")
+        assert res_analytics_after.status_code == 200
+        analytics_after = res_analytics_after.get_json()
+        assert analytics_after["summary"]["answeredQuestions"] >= 1
+        assert analytics_after["summary"]["masteredTopics"] >= 1
+        print("PASS: GET /api/bootstrap & /api/analytics confirmed 100% persistence in PostgreSQL 'cpa-ambima'")
 
     finally:
-        print("=== [5/5] Restoring test records to clean state in PostgreSQL ===")
+        print("=== [6/6] Restoring test records to clean state in PostgreSQL ===")
         with conn.cursor() as cur:
             if orig_topic:
                 cur.execute(
