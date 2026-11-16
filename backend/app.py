@@ -1104,8 +1104,16 @@ def serve_modulos_files(filename):
     return send_from_directory(ROOT_DIR / "modulos", filename)
 
 
+@app.route("/assets/<path:filename>", methods=["GET"])
+def serve_react_assets(filename):
+    return send_from_directory(ROOT_DIR / "frontend" / "dist" / "assets", filename)
+
+
 @app.route("/", methods=["GET"])
 def serve_index():
+    dist_index = ROOT_DIR / "frontend" / "dist" / "index.html"
+    if dist_index.exists():
+        return send_from_directory(ROOT_DIR / "frontend" / "dist", "index.html")
     return send_from_directory(ROOT_DIR, "index.html")
 
 
