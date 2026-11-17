@@ -1089,6 +1089,202 @@ def api_simulations_create():
         conn.close()
 
 
+def ensure_auth_tables(conn):
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                email_hash TEXT UNIQUE NOT NULL,
+                email_masked TEXT NOT NULL,
+                display_alias TEXT NOT NULL,
+                password_hash TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS user_difficulties (
+                id SERIAL PRIMARY KEY,
+                user_id INT REFERENCES users(id) ON DELETE CASCADE,
+                module_id INT,
+                topic_pd TEXT,
+                question_id TEXT NOT NULL,
+                error_reason TEXT DEFAULT 'conceito',
+                error_count INT DEFAULT 1,
+                last_error_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, question_id)
+            );
+            """
+        )
+    conn.commit()
+
+
+@app.route("/api/auth/register", methods=["POST"])
+def auth_register():
+    from backend.auth import hash_email, mask_email, hash_password, create_jwt
+
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip()
+    password = data.get("password") or ""
+    alias = (data.get("alias") or "").strip() or "Candidato CPA"
+
+    if "@" not in email or len(password) < 6:
+        return jsonify({"error": "Informe um e-mail válido e senha com no mínimo 6 caracteres."}), 400
+
+    e_hash = hash_email(email)
+    e_masked = mask_email(email)
+    pw_hash = hash_password(password)
+
+    conn = get_db_connection()
+    try:
+        ensure_auth_tables(conn)
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM users WHERE email_hash = %s", (e_hash,))
+            if cur.fetchone():
+                return jsonify({"error": "Este e-mail já possui cadastro."}), 409
+            cur.execute(
+                """
+                INSERT INTO users (email_hash, email_masked, display_alias, password_hash)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id, display_alias, email_masked
+                """,
+                (e_hash, e_masked, alias[:40], pw_hash),
+            )
+            row = cur.fetchone()
+        conn.commit()
+        token = create_jwt(row[0], row[1], row[2])
+        return jsonify(
+            {
+                "ok": True,
+                "token": token,
+                "user": {"id": row[0], "alias": row[1], "emailMasked": row[2]},
+            }
+        ), 201
+    finally:
+        conn.close()
+
+
+@app.route("/api/auth/login", methods=["POST"])
+def auth_login():
+    from backend.auth import hash_email, verify_password, create_jwt
+
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip()
+    password = data.get("password") or ""
+
+    if not email or not password:
+        return jsonify({"error": "E-mail e senha são obrigatórios."}), 400
+
+    e_hash = hash_email(email)
+    conn = get_db_connection()
+    try:
+        ensure_auth_tables(conn)
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, display_alias, email_masked, password_hash FROM users WHERE email_hash = %s",
+                (e_hash,),
+            )
+            row = cur.fetchone()
+        if not row or not verify_password(password, row[3]):
+            return jsonify({"error": "Credenciais inválidas."}), 401
+        token = create_jwt(row[0], row[1], row[2])
+        return jsonify(
+            {
+                "ok": True,
+                "token": token,
+                "user": {"id": row[0], "alias": row[1], "emailMasked": row[2]},
+            }
+        )
+    finally:
+        conn.close()
+
+
+@app.route("/api/auth/me", methods=["GET"])
+def auth_me():
+    from backend.auth import get_current_user_from_header
+
+    user = get_current_user_from_header()
+    if not user:
+        return jsonify({"error": "Não autenticado."}), 401
+    return jsonify(
+        {
+            "ok": True,
+            "user": {
+                "id": int(user["sub"]),
+                "alias": user.get("alias"),
+                "emailMasked": user.get("emailMasked"),
+            },
+        }
+    )
+
+
+@app.route("/api/difficulties", methods=["GET", "POST"])
+def handle_difficulties():
+    from backend.auth import get_current_user_from_header
+
+    user = get_current_user_from_header()
+    if not user:
+        return jsonify({"error": "Autenticação JWT obrigatória."}), 401
+    user_id = int(user["sub"])
+
+    conn = get_db_connection()
+    try:
+        ensure_auth_tables(conn)
+        if request.method == "POST":
+            data = request.get_json(silent=True) or {}
+            q_id = data.get("questionId")
+            mod_id = data.get("moduleId")
+            topic_pd = data.get("topicPd") or ""
+            reason = data.get("errorReason") or "conceito"
+            if not q_id:
+                return jsonify({"error": "questionId obrigatório."}), 400
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO user_difficulties (user_id, module_id, topic_pd, question_id, error_reason, error_count, last_error_at)
+                    VALUES (%s, %s, %s, %s, %s, 1, CURRENT_TIMESTAMP)
+                    ON CONFLICT (user_id, question_id) DO UPDATE SET
+                        error_reason = EXCLUDED.error_reason,
+                        error_count = user_difficulties.error_count + 1,
+                        last_error_at = CURRENT_TIMESTAMP
+                    """,
+                    (user_id, mod_id, topic_pd, q_id, reason),
+                )
+            conn.commit()
+            return jsonify({"ok": True})
+
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT module_id, topic_pd, question_id, error_reason, error_count, last_error_at
+                FROM user_difficulties
+                WHERE user_id = %s
+                ORDER BY error_count DESC, last_error_at DESC
+                """,
+                (user_id,),
+            )
+            rows = cur.fetchall()
+
+        by_module = {}
+        by_reason = {}
+        items = []
+        for r in rows:
+            m_key = str(r[0] or "?")
+            by_module[m_key] = by_module.get(m_key, 0) + r[4]
+            by_reason[r[3]] = by_reason.get(r[3], 0) + r[4]
+            items.append(
+                {
+                    "moduleId": r[0],
+                    "topicPd": r[1],
+                    "questionId": r[2],
+                    "errorReason": r[3],
+                    "errorCount": r[4],
+                    "lastErrorAt": r[5].isoformat() if r[5] else None,
+                }
+            )
+        return jsonify({"ok": True, "byModule": by_module, "byReason": by_reason, "items": items})
+    finally:
+        conn.close()
+
+
 @app.route("/src/<path:filename>", methods=["GET"])
 def serve_src_files(filename):
     return send_from_directory(ROOT_DIR / "src", filename)
