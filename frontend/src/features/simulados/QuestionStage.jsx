@@ -102,7 +102,7 @@ export default function QuestionStage({
         </div>
       )}
 
-      <QuestionBody question={question} />
+      <QuestionBody question={question} allowHints={assisted} />
 
       <div className="mt-5">
         <OptionList

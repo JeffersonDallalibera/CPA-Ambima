@@ -116,7 +116,7 @@ function analyzeExaminerXRay(question) {
 }
 
 // Contexto + enunciado com Pincel Marcador caractere por caractere (marca por cima com outra cor e desmarca com 2 cliques).
-export default function QuestionBody({ question }) {
+export default function QuestionBody({ question, allowHints = true }) {
   const [brushOn, setBrushOn] = useState(false);
   const [xrayOn, setXrayOn] = useState(false);
   const [speaking, setSpeaking] = useState(false);
@@ -249,18 +249,20 @@ export default function QuestionBody({ question }) {
             {speaking ? 'Parar' : 'Ouvir'}
           </button>
 
-          <button
-            type="button"
-            onClick={() => setXrayOn((v) => !v)}
-            className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
-              xrayOn
-                ? 'border-sky-400/60 bg-sky-400/15 text-sky-300'
-                : 'border-slate-700/70 bg-slate-900/60 text-slate-400 hover:text-sky-300'
-            }`}
-            title="Raio-X do Examinador: revela gatilhos, armadilhas e regra de ouro desta questão"
-          >
-            <ScanSearch className="h-3.5 w-3.5" /> Raio-X
-          </button>
+          {allowHints && (
+            <button
+              type="button"
+              onClick={() => setXrayOn((v) => !v)}
+              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
+                xrayOn
+                  ? 'border-sky-400/60 bg-sky-400/15 text-sky-300'
+                  : 'border-slate-700/70 bg-slate-900/60 text-slate-400 hover:text-sky-300'
+              }`}
+              title="Dica do Professor / Raio-X: revela gatilhos, armadilhas e regra de ouro desta questão"
+            >
+              <ScanSearch className="h-3.5 w-3.5" /> Dica / Raio-X
+            </button>
+          )}
 
           {totalMarkedChars > 0 && (
             <button
@@ -274,7 +276,7 @@ export default function QuestionBody({ question }) {
         </div>
       </div>
 
-      {xrayOn && (
+      {allowHints && xrayOn && (
         <div className="mb-3 rounded-xl border border-sky-500/30 bg-sky-500/10 p-3 text-xs leading-relaxed text-sky-200 space-y-1">
           <div className="font-bold text-sky-300">⚡ Raio-X do Examinador ANBIMA:</div>
           {analyzeExaminerXRay(question).map((tip, idx) => (
