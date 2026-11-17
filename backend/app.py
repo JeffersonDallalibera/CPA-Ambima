@@ -1106,6 +1106,8 @@ def ensure_auth_tables(conn):
             ALTER TABLE users ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'custom';
             ALTER TABLE users ADD COLUMN IF NOT EXISTS allowed_modules JSONB DEFAULT '[1,2,3,4]'::jsonb;
             ALTER TABLE users ADD COLUMN IF NOT EXISTS needs_profile JSONB DEFAULT '{}'::jsonb;
+            ALTER TABLE user_answers ADD COLUMN IF NOT EXISTS user_id INT;
+            ALTER TABLE exam_simulations ADD COLUMN IF NOT EXISTS user_id INT;
             CREATE TABLE IF NOT EXISTS password_resets (
                 id SERIAL PRIMARY KEY,
                 email_hash TEXT NOT NULL,
@@ -1345,7 +1347,7 @@ def auth_login():
         ensure_auth_tables(conn)
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, display_alias, email_masked, password_hash FROM users WHERE email_hash = %s",
+                "SELECT id, display_alias, email_masked, password_hash, plan, allowed_modules FROM users WHERE email_hash = %s",
                 (e_hash,),
             )
             row = cur.fetchone()
@@ -1356,7 +1358,13 @@ def auth_login():
             {
                 "ok": True,
                 "token": token,
-                "user": {"id": row[0], "alias": row[1], "emailMasked": row[2]},
+                "user": {
+                    "id": row[0],
+                    "alias": row[1],
+                    "emailMasked": row[2],
+                    "plan": row[4] or "custom",
+                    "allowedModules": row[5] or [1, 2, 3, 4],
+                },
             }
         )
     finally:
@@ -1370,16 +1378,51 @@ def auth_me():
     user = get_current_user_from_header()
     if not user:
         return jsonify({"error": "Não autenticado."}), 401
-    return jsonify(
-        {
-            "ok": True,
-            "user": {
-                "id": int(user["sub"]),
-                "alias": user.get("alias"),
-                "emailMasked": user.get("emailMasked"),
-            },
-        }
-    )
+    user_id = int(user["sub"])
+    conn = get_db_connection()
+    try:
+        ensure_auth_tables(conn)
+        with conn.cursor() as cur:
+            cur.execute("SELECT plan, allowed_modules FROM users WHERE id = %s", (user_id,))
+            row = cur.fetchone()
+        return jsonify(
+            {
+                "ok": True,
+                "user": {
+                    "id": user_id,
+                    "alias": user.get("alias"),
+                    "emailMasked": user.get("emailMasked"),
+                    "plan": (row[0] if row else "custom") or "custom",
+                    "allowedModules": (row[1] if row else [1, 2, 3, 4]) or [1, 2, 3, 4],
+                },
+            }
+        )
+    finally:
+        conn.close()
+
+
+@app.route("/api/auth/upgrade", methods=["POST"])
+def auth_upgrade():
+    from backend.auth import get_current_user_from_header
+
+    user = get_current_user_from_header()
+    if not user:
+        return jsonify({"error": "Autenticação JWT obrigatória."}), 401
+    data = request.get_json(silent=True) or {}
+    modules = data.get("allowedModules") or [1, 2, 3, 4]
+    plan = data.get("plan") or ("unlimited" if len(modules) == 4 else "custom")
+    conn = get_db_connection()
+    try:
+        ensure_auth_tables(conn)
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE users SET plan = %s, allowed_modules = %s::jsonb WHERE id = %s",
+                (plan, json.dumps(modules), int(user["sub"])),
+            )
+        conn.commit()
+        return jsonify({"ok": True, "plan": plan, "allowedModules": modules})
+    finally:
+        conn.close()
 
 
 @app.route("/api/difficulties", methods=["GET", "POST"])

@@ -68,6 +68,11 @@ export default function Topbar() {
             <span className="hidden font-semibold text-emerald-300 sm:inline">
               {user.alias} ({user.emailMasked})
             </span>
+            <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">
+              {user.plan === 'unlimited'
+                ? '👑 Ilimitado'
+                : `${(user.allowedModules || [1, 2, 3, 4]).length} mód.`}
+            </span>
             <button
               type="button"
               onClick={handleLogout}
