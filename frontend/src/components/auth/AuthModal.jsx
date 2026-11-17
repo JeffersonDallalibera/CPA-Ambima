@@ -1,21 +1,109 @@
-import { useState } from 'react';
-import { ShieldCheck, Lock, Mail, User, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ShieldCheck, Lock, Mail, User, X, KeyRound } from 'lucide-react';
 
 export default function AuthModal({ open, onClose, onAuthSuccess }) {
-  const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const [mode, setMode] = useState('login'); // 'login' | 'register' | 'forgot' | 'reset'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [alias, setAlias] = useState('');
+  const [code, setCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [info, setInfo] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
+  useEffect(() => {
+    if (!open || !googleClientId) return;
+    if (document.getElementById('google-gsi-script')) return;
+    const script = document.createElement('script');
+    script.id = 'google-gsi-script';
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+  }, [open, googleClientId]);
+
   if (!open) return null;
+
+  const handleGoogleClick = () => {
+    setError('');
+    if (!googleClientId || !window.google?.accounts?.id) {
+      setError('Configure VITE_GOOGLE_CLIENT_ID no ambiente para ativar o botão Google OAuth2.');
+      return;
+    }
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: async (response) => {
+        try {
+          setLoading(true);
+          const res = await fetch('/api/auth/google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken: response.credential }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            setError(data.error || 'Erro ao autenticar com Google.');
+            return;
+          }
+          localStorage.setItem('cpa_jwt_token', data.token);
+          localStorage.setItem('cpa_jwt_user', JSON.stringify(data.user));
+          onAuthSuccess(data.user, data.token);
+          onClose();
+        } catch {
+          setError('Falha de rede ao validar Google.');
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+    window.google.accounts.id.prompt();
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setInfo('');
     setLoading(true);
     try {
+      if (mode === 'forgot') {
+        const res = await fetch('/api/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || 'Erro ao solicitar código.');
+          return;
+        }
+        setInfo(
+          data.devCode
+            ? `Modo dev (sem SMTP): use o código ${data.devCode}`
+            : 'Código de 6 dígitos enviado para o seu Gmail!'
+        );
+        setMode('reset');
+        return;
+      }
+
+      if (mode === 'reset') {
+        const res = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, code, newPassword }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || 'Código inválido ou expirado.');
+          return;
+        }
+        setInfo('Senha redefinida com sucesso! Faça login.');
+        setMode('login');
+        return;
+      }
+
       const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -48,10 +136,13 @@ export default function AuthModal({ open, onClose, onAuthSuccess }) {
             </div>
             <div>
               <h2 className="text-base font-bold text-white">
-                {mode === 'login' ? 'Entrar na Plataforma' : 'Criar Conta Segura'}
+                {mode === 'login' && 'Entrar na Plataforma'}
+                {mode === 'register' && 'Criar Conta Segura'}
+                {mode === 'forgot' && 'Recuperar Senha (Gmail)'}
+                {mode === 'reset' && 'Definir Nova Senha'}
               </h2>
               <p className="text-[11px] text-slate-400">
-                JWT + Anonimização LGPD no PostgreSQL
+                Google OAuth2 + JWT + Anonimização LGPD
               </p>
             </div>
           </div>
@@ -64,16 +155,20 @@ export default function AuthModal({ open, onClose, onAuthSuccess }) {
           </button>
         </div>
 
-        <div className="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-200">
-          🔒 <b>Privacidade Completa:</b> Seu e-mail é armazenado como hash SHA-256 e exibido mascarado (ex: <code>je***@gmail.com</code>). Suas dificuldades por módulo/tópico ficam salvas de forma segura para personalizar seus simulados.
-        </div>
+        {(mode === 'login' || mode === 'register') && (
+          <button
+            type="button"
+            onClick={handleGoogleClick}
+            className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-700 bg-white py-2.5 text-sm font-bold text-slate-900 transition hover:bg-slate-100"
+          >
+            <span>G</span> Continuar com Google
+          </button>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-3">
           {mode === 'register' && (
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-300">
-                Apelido / Nome de Exibição
-              </label>
+              <label className="mb-1 block text-xs font-semibold text-slate-300">Apelido</label>
               <div className="relative">
                 <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
                 <input
@@ -96,28 +191,72 @@ export default function AuthModal({ open, onClose, onAuthSuccess }) {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
+                placeholder="seu@gmail.com"
                 className="w-full rounded-xl border border-slate-700 bg-slate-950 py-2 pl-9 pr-3 text-sm text-white outline-none focus:border-emerald-500"
               />
             </div>
           </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-300">Senha</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 py-2 pl-9 pr-3 text-sm text-white outline-none focus:border-emerald-500"
-              />
+          {(mode === 'login' || mode === 'register') && (
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-300">Senha</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Mínimo 6 caracteres"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 py-2 pl-9 pr-3 text-sm text-white outline-none focus:border-emerald-500"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
+          {mode === 'reset' && (
+            <>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-300">
+                  Código de 6 dígitos
+                </label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    placeholder="000000"
+                    className="w-full rounded-xl border border-slate-700 bg-slate-950 py-2 pl-9 pr-3 font-mono text-sm text-white outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-300">Nova Senha</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                    className="w-full rounded-xl border border-slate-700 bg-slate-950 py-2 pl-9 pr-3 text-sm text-white outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {info && (
+            <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-3 py-2 text-xs text-emerald-300">
+              {info}
+            </div>
+          )}
           {error && (
             <div className="rounded-lg border border-rose-500/40 bg-rose-500/15 px-3 py-2 text-xs text-rose-300">
               {error}
@@ -132,15 +271,29 @@ export default function AuthModal({ open, onClose, onAuthSuccess }) {
             {loading
               ? 'Processando...'
               : mode === 'login'
-              ? 'Entrar com Segurança'
-              : 'Criar Conta Anonimizada'}
+              ? 'Entrar'
+              : mode === 'register'
+              ? 'Criar Conta'
+              : mode === 'forgot'
+              ? 'Enviar Código por E-mail'
+              : 'Redefinir Senha'}
           </button>
         </form>
 
-        <div className="mt-4 text-center text-xs text-slate-400">
-          {mode === 'login' ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+          {mode === 'login' && (
             <>
-              Ainda não tem conta?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('forgot');
+                  setError('');
+                  setInfo('');
+                }}
+                className="text-amber-400 hover:underline"
+              >
+                Esqueci minha senha
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -152,20 +305,19 @@ export default function AuthModal({ open, onClose, onAuthSuccess }) {
                 Criar conta
               </button>
             </>
-          ) : (
-            <>
-              Já possui conta?{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('login');
-                  setError('');
-                }}
-                className="font-bold text-emerald-400 hover:underline"
-              >
-                Fazer login
-              </button>
-            </>
+          )}
+          {mode !== 'login' && (
+            <button
+              type="button"
+              onClick={() => {
+                setMode('login');
+                setError('');
+                setInfo('');
+              }}
+              className="font-bold text-emerald-400 hover:underline"
+            >
+              ← Voltar para Login
+            </button>
           )}
         </div>
       </div>

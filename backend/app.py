@@ -1099,6 +1099,16 @@ def ensure_auth_tables(conn):
                 email_masked TEXT NOT NULL,
                 display_alias TEXT NOT NULL,
                 password_hash TEXT NOT NULL,
+                google_sub TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT;
+            CREATE TABLE IF NOT EXISTS password_resets (
+                id SERIAL PRIMARY KEY,
+                email_hash TEXT NOT NULL,
+                code_hash TEXT NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                used BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE IF NOT EXISTS user_difficulties (
@@ -1115,6 +1125,149 @@ def ensure_auth_tables(conn):
             """
         )
     conn.commit()
+
+
+@app.route("/api/auth/google", methods=["POST"])
+def auth_google():
+    import urllib.request
+    import json as pyjson
+    from backend.auth import hash_email, mask_email, hash_password, create_jwt
+
+    data = request.get_json(silent=True) or {}
+    id_token = (data.get("idToken") or "").strip()
+    if not id_token:
+        return jsonify({"error": "idToken do Google é obrigatório."}), 400
+
+    try:
+        url = f"https://oauth2.googleapis.com/tokeninfo?id_token={id_token}"
+        with urllib.request.urlopen(url, timeout=8) as resp:
+            info = pyjson.loads(resp.read().decode("utf-8"))
+    except Exception:
+        return jsonify({"error": "Token do Google inválido ou expirado."}), 401
+
+    email = (info.get("email") or "").strip()
+    if not email:
+        return jsonify({"error": "Conta Google sem e-mail verificado."}), 400
+
+    expected_aud = os.environ.get("GOOGLE_CLIENT_ID", "")
+    if expected_aud and info.get("aud") != expected_aud:
+        return jsonify({"error": "Client ID do Google não corresponde."}), 401
+
+    e_hash = hash_email(email)
+    e_masked = mask_email(email)
+    alias = (info.get("name") or "Candidato Google")[:40]
+    google_sub = info.get("sub")
+
+    conn = get_db_connection()
+    try:
+        ensure_auth_tables(conn)
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, display_alias, email_masked FROM users WHERE email_hash = %s", (e_hash,))
+            row = cur.fetchone()
+            if row:
+                cur.execute("UPDATE users SET google_sub = %s WHERE id = %s", (google_sub, row[0]))
+                user_id, user_alias, user_masked = row[0], row[1], row[2]
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO users (email_hash, email_masked, display_alias, password_hash, google_sub)
+                    VALUES (%s, %s, %s, %s, %s)
+                    RETURNING id, display_alias, email_masked
+                    """,
+                    (e_hash, e_masked, alias, hash_password(os.urandom(16).hex()), google_sub),
+                )
+                r = cur.fetchone()
+                user_id, user_alias, user_masked = r[0], r[1], r[2]
+        conn.commit()
+        token = create_jwt(user_id, user_alias, user_masked)
+        return jsonify({"ok": True, "token": token, "user": {"id": user_id, "alias": user_alias, "emailMasked": user_masked}})
+    finally:
+        conn.close()
+
+
+@app.route("/api/auth/forgot-password", methods=["POST"])
+def auth_forgot_password():
+    import hashlib
+    import secrets
+    from backend.auth import hash_email
+    from backend.mailer import send_email
+
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip()
+    if "@" not in email:
+        return jsonify({"error": "Informe um e-mail válido."}), 400
+
+    e_hash = hash_email(email)
+    code = str(secrets.randbelow(900000) + 100000)
+    code_hash = hashlib.sha256(code.encode("utf-8")).hexdigest()
+
+    conn = get_db_connection()
+    try:
+        ensure_auth_tables(conn)
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM users WHERE email_hash = %s", (e_hash,))
+            exists = cur.fetchone()
+            if exists:
+                cur.execute(
+                    """
+                    INSERT INTO password_resets (email_hash, code_hash, expires_at)
+                    VALUES (%s, %s, CURRENT_TIMESTAMP + INTERVAL '15 minutes')
+                    """,
+                    (e_hash, code_hash),
+                )
+        conn.commit()
+        sent = False
+        if exists:
+            sent = send_email(
+                email,
+                "Código de Recuperação de Senha • CPA Pro Mastery",
+                f"<p>Seu código de verificação é: <strong style='font-size:20px'>{code}</strong></p><p>Válido por 15 minutos.</p>",
+            )
+        resp = {"ok": True, "emailSent": sent, "message": "Se o e-mail existir, enviamos um código de 6 dígitos."}
+        if not sent and exists:
+            resp["devCode"] = code
+        return jsonify(resp)
+    finally:
+        conn.close()
+
+
+@app.route("/api/auth/reset-password", methods=["POST"])
+def auth_reset_password():
+    import hashlib
+    from backend.auth import hash_email, hash_password
+
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip()
+    code = (data.get("code") or "").strip()
+    new_password = data.get("newPassword") or ""
+
+    if "@" not in email or len(code) != 6 or len(new_password) < 6:
+        return jsonify({"error": "E-mail, código de 6 dígitos e nova senha (>=6) são obrigatórios."}), 400
+
+    e_hash = hash_email(email)
+    code_hash = hashlib.sha256(code.encode("utf-8")).hexdigest()
+
+    conn = get_db_connection()
+    try:
+        ensure_auth_tables(conn)
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id FROM password_resets
+                WHERE email_hash = %s AND code_hash = %s AND used = FALSE AND expires_at > CURRENT_TIMESTAMP
+                ORDER BY created_at DESC LIMIT 1
+                """,
+                (e_hash, code_hash),
+            )
+            reset_row = cur.fetchone()
+            if not reset_row:
+                return jsonify({"error": "Código inválido ou expirado."}), 400
+            cur.execute("UPDATE password_resets SET used = TRUE WHERE id = %s", (reset_row[0],))
+            cur.execute("UPDATE users SET password_hash = %s WHERE email_hash = %s", (hash_password(new_password), e_hash))
+        conn.commit()
+        return jsonify({"ok": True, "message": "Senha redefinida com sucesso!"})
+    finally:
+        conn.close()
 
 
 @app.route("/api/auth/register", methods=["POST"])
