@@ -4,9 +4,10 @@ import { Highlighter, Eraser } from 'lucide-react';
 const STORAGE_KEY = 'cpa_highlights_v1';
 
 const COLORS = [
-  { id: 'yellow', label: 'Amarelo', cls: 'bg-amber-300/85 text-slate-950 rounded px-0.5' },
-  { id: 'green', label: 'Esmeralda', cls: 'bg-emerald-400/80 text-slate-950 rounded px-0.5' },
-  { id: 'cyan', label: 'Ciano', cls: 'bg-sky-400/80 text-slate-950 rounded px-0.5' },
+  { id: 'yellow', label: 'Amarelo', dot: 'bg-amber-300', cls: 'bg-amber-300/85 text-slate-950 rounded px-0.5 cursor-pointer' },
+  { id: 'green', label: 'Esmeralda', dot: 'bg-emerald-400', cls: 'bg-emerald-400/80 text-slate-950 rounded px-0.5 cursor-pointer' },
+  { id: 'cyan', label: 'Ciano', dot: 'bg-sky-400', cls: 'bg-sky-400/80 text-slate-950 rounded px-0.5 cursor-pointer' },
+  { id: 'pink', label: 'Rosa', dot: 'bg-rose-400', cls: 'bg-rose-400/85 text-slate-950 rounded px-0.5 cursor-pointer' },
 ];
 
 function loadHighlights(qId) {
@@ -29,7 +30,7 @@ function saveHighlights(qId, list) {
   } catch {}
 }
 
-function renderHighlightedText(text, highlights) {
+function renderHighlightedText(text, highlights, onRemoveHighlight) {
   if (!text || !highlights.length) return text;
   const escaped = highlights
     .map((h) => h.text)
@@ -45,7 +46,15 @@ function renderHighlightedText(text, highlights) {
     if (!match) return part;
     const colorObj = COLORS.find((c) => c.id === match.color) || COLORS[0];
     return (
-      <mark key={i} className={colorObj.cls}>
+      <mark
+        key={i}
+        className={colorObj.cls}
+        title="Dê 2 cliques para desmarcar"
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          onRemoveHighlight(match.text);
+        }}
+      >
         {part}
       </mark>
     );
@@ -62,16 +71,25 @@ export default function QuestionBody({ question }) {
     setHighlights(loadHighlights(question?.id));
   }, [question?.id]);
 
+  const removeHighlight = (textToRemove) => {
+    if (!question?.id) return;
+    const next = highlights.filter((h) => h.text !== textToRemove);
+    setHighlights(next);
+    saveHighlights(question.id, next);
+  };
+
   const handleMouseUp = () => {
     if (!brushOn || !question?.id) return;
     const sel = window.getSelection();
     const selectedText = sel ? sel.toString().trim() : '';
     if (selectedText.length < 2) return;
 
-    const next = [
-      ...highlights.filter((h) => h.text !== selectedText),
-      { text: selectedText, color },
-    ];
+    // Se já estiver marcado exatamente igual, desmarca; caso contrário, marca com a cor escolhida
+    const exists = highlights.some((h) => h.text === selectedText);
+    const next = exists
+      ? highlights.filter((h) => h.text !== selectedText)
+      : [...highlights, { text: selectedText, color }];
+
     setHighlights(next);
     saveHighlights(question.id, next);
     sel.removeAllRanges();
@@ -85,7 +103,7 @@ export default function QuestionBody({ question }) {
   return (
     <div onMouseUp={handleMouseUp}>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setBrushOn((v) => !v)}
@@ -94,31 +112,30 @@ export default function QuestionBody({ question }) {
                 ? 'border-amber-400/60 bg-amber-400/15 text-amber-300'
                 : 'border-slate-700/80 bg-slate-900/60 text-slate-400 hover:text-slate-200'
             }`}
-            title="Ative e selecione qualquer trecho do texto para marcar"
+            title="Ative e selecione qualquer trecho para marcar (2 cliques em uma marcação para desmarcar)"
           >
             <Highlighter className="h-3.5 w-3.5" />
-            {brushOn ? 'Pincel Ativo (selecione o texto)' : 'Pincel Marcador'}
+            {brushOn ? 'Pincel Ativo' : 'Pincel Marcador'}
           </button>
 
-          {brushOn && (
-            <div className="flex items-center gap-1">
-              {COLORS.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setColor(c.id)}
-                  title={c.label}
-                  className={`h-5 w-5 rounded-full border transition ${
-                    c.id === 'yellow'
-                      ? 'bg-amber-300'
-                      : c.id === 'green'
-                      ? 'bg-emerald-400'
-                      : 'bg-sky-400'
-                  } ${color === c.id ? 'scale-110 border-white ring-2 ring-white/40' : 'border-transparent opacity-70'}`}
-                />
-              ))}
-            </div>
-          )}
+          <div className="flex items-center gap-1.5" title="Escolha a cor do marcador">
+            {COLORS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => {
+                  setColor(c.id);
+                  setBrushOn(true);
+                }}
+                title={`Marcar com ${c.label}`}
+                className={`h-5 w-5 rounded-full border transition ${c.dot} ${
+                  color === c.id
+                    ? 'scale-110 border-white ring-2 ring-white/40'
+                    : 'border-transparent opacity-65 hover:opacity-100'
+                }`}
+              />
+            ))}
+          </div>
         </div>
 
         {highlights.length > 0 && (
@@ -138,7 +155,7 @@ export default function QuestionBody({ question }) {
             brushOn ? 'cursor-text select-text' : ''
           }`}
         >
-          {renderHighlightedText(question.contexto, highlights)}
+          {renderHighlightedText(question.contexto, highlights, removeHighlight)}
         </blockquote>
       )}
       <h2
@@ -146,7 +163,7 @@ export default function QuestionBody({ question }) {
           brushOn ? 'cursor-text select-text' : ''
         }`}
       >
-        {renderHighlightedText(question.enunciado, highlights)}
+        {renderHighlightedText(question.enunciado, highlights, removeHighlight)}
       </h2>
     </div>
   );
