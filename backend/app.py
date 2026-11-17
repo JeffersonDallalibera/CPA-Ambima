@@ -1103,6 +1103,9 @@ def ensure_auth_tables(conn):
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT;
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'custom';
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS allowed_modules JSONB DEFAULT '[1,2,3,4]'::jsonb;
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS needs_profile JSONB DEFAULT '{}'::jsonb;
             CREATE TABLE IF NOT EXISTS password_resets (
                 id SERIAL PRIMARY KEY,
                 email_hash TEXT NOT NULL,
@@ -1285,6 +1288,10 @@ def auth_register():
     e_hash = hash_email(email)
     e_masked = mask_email(email)
     pw_hash = hash_password(password)
+    is_owner = "jeffersonmigueldallalibera" in email.lower()
+    plan = "unlimited" if is_owner else (data.get("plan") or "custom")
+    allowed_modules = [1, 2, 3, 4] if is_owner else (data.get("allowedModules") or [2, 3])
+    needs_profile = data.get("needsProfile") or {}
 
     conn = get_db_connection()
     try:
@@ -1295,11 +1302,11 @@ def auth_register():
                 return jsonify({"error": "Este e-mail já possui cadastro."}), 409
             cur.execute(
                 """
-                INSERT INTO users (email_hash, email_masked, display_alias, password_hash)
-                VALUES (%s, %s, %s, %s)
-                RETURNING id, display_alias, email_masked
+                INSERT INTO users (email_hash, email_masked, display_alias, password_hash, plan, allowed_modules, needs_profile)
+                VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s::jsonb)
+                RETURNING id, display_alias, email_masked, plan, allowed_modules
                 """,
-                (e_hash, e_masked, alias[:40], pw_hash),
+                (e_hash, e_masked, alias[:40], pw_hash, plan, json.dumps(allowed_modules), json.dumps(needs_profile)),
             )
             row = cur.fetchone()
         conn.commit()
@@ -1308,7 +1315,13 @@ def auth_register():
             {
                 "ok": True,
                 "token": token,
-                "user": {"id": row[0], "alias": row[1], "emailMasked": row[2]},
+                "user": {
+                    "id": row[0],
+                    "alias": row[1],
+                    "emailMasked": row[2],
+                    "plan": row[3],
+                    "allowedModules": row[4],
+                },
             }
         ), 201
     finally:

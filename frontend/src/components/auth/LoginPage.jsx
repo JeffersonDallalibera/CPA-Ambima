@@ -7,6 +7,8 @@ export default function LoginPage({ onSuccess, onSkip }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [alias, setAlias] = useState('');
+  const [goal, setGoal] = useState('Aprovação Rápida (Sprint)');
+  const [selectedModules, setSelectedModules] = useState([2, 3]);
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [info, setInfo] = useState('');
@@ -102,10 +104,18 @@ export default function LoginPage({ onSuccess, onSkip }) {
       }
 
       const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
+      const isOwner = email.toLowerCase().includes('jeffersonmigueldallalibera');
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, alias }),
+        body: JSON.stringify({
+          email,
+          password,
+          alias,
+          plan: isOwner ? 'unlimited' : 'custom',
+          allowedModules: isOwner ? [1, 2, 3, 4] : selectedModules,
+          needsProfile: { goal },
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -165,19 +175,78 @@ export default function LoginPage({ onSuccess, onSkip }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === 'register' && (
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-ink-2">Apelido</label>
-              <div className="relative">
-                <User className="absolute left-3 top-2.5 h-4 w-4 text-ink-3" />
-                <input
-                  type="text"
-                  value={alias}
-                  onChange={(e) => setAlias(e.target.value)}
-                  placeholder="Ex: Candidato CPA"
-                  className="h-10 w-full rounded-lg border border-line bg-canvas pl-9 pr-3 text-sm text-ink outline-none focus:border-brand"
-                />
+            <>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-ink-2">Apelido</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-2.5 h-4 w-4 text-ink-3" />
+                  <input
+                    type="text"
+                    value={alias}
+                    onChange={(e) => setAlias(e.target.value)}
+                    placeholder="Ex: Candidato CPA"
+                    className="h-10 w-full rounded-lg border border-line bg-canvas pl-9 pr-3 text-sm text-ink outline-none focus:border-brand"
+                  />
+                </div>
               </div>
-            </div>
+
+              <div className="rounded-xl border border-line bg-subtle p-3.5 space-y-2.5">
+                <div className="text-xs font-semibold text-ink">
+                  Suas Necessidades & Módulos (Plano Sob Medida)
+                </div>
+                <select
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value)}
+                  className="h-9 w-full rounded-lg border border-line bg-surface px-2.5 text-xs text-ink outline-none focus:border-brand"
+                >
+                  <option>Aprovação Rápida (Sprint)</option>
+                  <option>Formação Completa CPA</option>
+                  <option>Uso Corporativo / Equipe</option>
+                </select>
+                <div className="grid grid-cols-2 gap-1.5 text-xs">
+                  {[
+                    { id: 1, name: 'M1: SFN & Economia' },
+                    { id: 2, name: 'M2: Produtos (40%)' },
+                    { id: 3, name: 'M3: Ética & Cliente (30%)' },
+                    { id: 4, name: 'M4: Inovação & IA' },
+                  ].map((m) => {
+                    const checked = selectedModules.includes(m.id);
+                    return (
+                      <label
+                        key={m.id}
+                        className={`flex cursor-pointer items-center gap-1.5 rounded-lg border px-2 py-1.5 ${
+                          checked ? 'border-brand bg-brand/10 text-ink' : 'border-line bg-surface text-ink-3'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() =>
+                            setSelectedModules((prev) =>
+                              prev.includes(m.id) ? prev.filter((x) => x !== m.id) : [...prev, m.id]
+                            )
+                          }
+                          className="accent-brand"
+                        />
+                        <span className="truncate">{m.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center justify-between text-[11px] font-medium text-ink-2">
+                  <span>
+                    {email.toLowerCase().includes('jeffersonmigueldallalibera')
+                      ? '👑 Conta Proprietário: Acesso Ilimitado'
+                      : `Plano selecionado: ${selectedModules.length} módulo(s)`}
+                  </span>
+                  <span className="font-mono font-bold text-brand">
+                    {email.toLowerCase().includes('jeffersonmigueldallalibera')
+                      ? 'ILIMITADO'
+                      : `R$ ${selectedModules.length * 49}/mês`}
+                  </span>
+                </div>
+              </div>
+            </>
           )}
 
           <div>
