@@ -1,4 +1,5 @@
-﻿import { Check, Crosshair, TriangleAlert } from 'lucide-react';
+﻿import { useState, useEffect } from 'react';
+import { Check, Crosshair, TriangleAlert, Volume2, Square, Zap } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import RichHtml from '../../components/ui/RichHtml';
@@ -39,8 +40,53 @@ function Callout({ icon: Icon, title, items, tone }) {
 }
 
 export default function TopicReader({ topic, done, onToggle }) {
+  const [speaking, setSpeaking] = useState(false);
+  const [flashMode, setFlashMode] = useState(false);
+
+  useEffect(() => {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+    }
+  }, [topic?.codigo]);
+
+  const stripHtml = (html) => (html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
+  const toggleSpeak = () => {
+    if (!window.speechSynthesis) return;
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+      return;
+    }
+    const gatilhos = toList(topic.gatilhosProva).map(stripHtml).join('. ');
+    const pegadinhas = toList(topic.pegadinhas).map(stripHtml).join('. ');
+    const text = `${topic.titulo}. ${flashMode ? '' : stripHtml(topic.explicacao)}. Gatilhos de prova: ${gatilhos}. Pegadinhas: ${pegadinhas}`;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'pt-BR';
+    utter.rate = 1.08;
+    utter.onend = () => setSpeaking(false);
+    utter.onerror = () => setSpeaking(false);
+    setSpeaking(true);
+    window.speechSynthesis.speak(utter);
+  };
+
   return (
     <article className="rise max-w-[72ch] space-y-5">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button size="sm" variant="secondary" onClick={toggleSpeak}>
+          {speaking ? <Square className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+          {speaking ? 'Parar Áudio' : 'Ouvir Tópico'}
+        </Button>
+        <Button
+          size="sm"
+          variant={flashMode ? 'primary' : 'secondary'}
+          onClick={() => setFlashMode((v) => !v)}
+        >
+          <Zap className="h-3.5 w-3.5" />
+          {flashMode ? 'Resumo Relâmpago (Ativo)' : 'Resumo Relâmpago (10s)'}
+        </Button>
+      </div>
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <span className="num text-sm text-ink-3">{topic.codigo}</span>
