@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Highlighter, Eraser } from 'lucide-react';
+import { Highlighter, Eraser, ScanSearch } from 'lucide-react';
 
 const STORAGE_KEY = 'cpa_highlights_char_v2';
 
@@ -85,9 +85,40 @@ function renderCharHighlighted(text, fieldMap, onDoubleClickSpan) {
   });
 }
 
+function analyzeExaminerXRay(question) {
+  const full = `${question?.contexto || ''} ${question?.enunciado || ''} ${question?.topicoPD || ''}`.toLowerCase();
+  const traps = [];
+  if (/\b(não|exceto|incorreta|vedad|proibid)\b/i.test(full)) {
+    traps.push('⚠️ Comando NEGATIVO detectado ("NÃO / EXCETO / VEDADO") — cuidado para não marcar a verdadeira.');
+  }
+  if (/pgbl|vgbl|previdência/.test(full)) {
+    traps.push('🎯 PGBL = Declaração Completa + até 12% renda bruta + IR sobre o TOTAL. VGBL = Simplificado + IR só sobre RENDIMENTOS.');
+  }
+  if (/fgc|cri|cra|debênture|lci|lca|cdb/.test(full)) {
+    traps.push('🛡️ FGC cobre CDB/LCI/LCA/Poupança (R$ 250 mil/CPF/IF, teto R$ 1M/4 anos). NÃO cobre CRI, CRA, Debêntures, Fundos ou COE.');
+  }
+  if (/cvm 175|fundo|cotista|segregação/.test(full)) {
+    traps.push('📜 CVM 175: Segregação patrimonial entre classes, responsabilidade limitada como padrão e Art. 101 veda prometer rentabilidade.');
+  }
+  if (/bdr|dólar|câmbio|ptax/.test(full)) {
+    traps.push('🧮 Paridade BDR = (Preço Ação USD × Câmbio) ÷ Paridade. Dólar alto encarece importações e beneficia exportadores.');
+  }
+  if (/selic|ipca|copom|fiscal|compromissada|compulsório/.test(full)) {
+    traps.push('🏛️ Compromissada de venda enxuga liquidez. Descontrole fiscal eleva risco-país, juros e derruba PU dos títulos prefixados.');
+  }
+  if (/churning|spoofing|layering|insider|front running|kyc|pldft/.test(full)) {
+    traps.push('⚖️ CVM 62: Churning = giro excessivo por comissão; Spoofing/Layering = ordens falsas; Front Running = passar na frente do cliente.');
+  }
+  if (traps.length === 0) {
+    traps.push('🔍 Leia primeiro a pergunta final do enunciado, identifique o perfil/prazo do cliente e elimine 2 alternativas absurdas.');
+  }
+  return traps;
+}
+
 // Contexto + enunciado com Pincel Marcador caractere por caractere (marca por cima com outra cor e desmarca com 2 cliques).
 export default function QuestionBody({ question }) {
   const [brushOn, setBrushOn] = useState(false);
+  const [xrayOn, setXrayOn] = useState(false);
   const [color, setColor] = useState('yellow');
   const [charMap, setCharMap] = useState(() => loadCharMap(question?.id));
   const ctxRef = useRef(null);
@@ -180,16 +211,40 @@ export default function QuestionBody({ question }) {
           </div>
         </div>
 
-        {totalMarkedChars > 0 && (
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={handleClear}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-700/70 px-2 py-1 text-[11px] font-medium text-slate-400 hover:border-rose-500/40 hover:text-rose-400"
+            onClick={() => setXrayOn((v) => !v)}
+            className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
+              xrayOn
+                ? 'border-sky-400/60 bg-sky-400/15 text-sky-300'
+                : 'border-slate-700/70 bg-slate-900/60 text-slate-400 hover:text-sky-300'
+            }`}
+            title="Raio-X do Examinador: revela gatilhos, armadilhas e regra de ouro desta questão"
           >
-            <Eraser className="h-3 w-3" /> Limpar marcações
+            <ScanSearch className="h-3.5 w-3.5" /> Raio-X
           </button>
-        )}
+
+          {totalMarkedChars > 0 && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-700/70 px-2 py-1 text-[11px] font-medium text-slate-400 hover:border-rose-500/40 hover:text-rose-400"
+            >
+              <Eraser className="h-3 w-3" /> Limpar marcações
+            </button>
+          )}
+        </div>
       </div>
+
+      {xrayOn && (
+        <div className="mb-3 rounded-xl border border-sky-500/30 bg-sky-500/10 p-3 text-xs leading-relaxed text-sky-200 space-y-1">
+          <div className="font-bold text-sky-300">⚡ Raio-X do Examinador ANBIMA:</div>
+          {analyzeExaminerXRay(question).map((tip, idx) => (
+            <div key={idx}>{tip}</div>
+          ))}
+        </div>
+      )}
 
       {question.contexto && (
         <blockquote
