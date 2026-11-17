@@ -1,107 +1,149 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Highlighter, Eraser } from 'lucide-react';
 
-const STORAGE_KEY = 'cpa_highlights_v1';
+const STORAGE_KEY = 'cpa_highlights_char_v2';
 
 const COLORS = [
-  { id: 'yellow', label: 'Amarelo', dot: 'bg-amber-300', cls: 'bg-amber-300/85 text-slate-950 rounded px-0.5 cursor-pointer' },
-  { id: 'green', label: 'Esmeralda', dot: 'bg-emerald-400', cls: 'bg-emerald-400/80 text-slate-950 rounded px-0.5 cursor-pointer' },
-  { id: 'cyan', label: 'Ciano', dot: 'bg-sky-400', cls: 'bg-sky-400/80 text-slate-950 rounded px-0.5 cursor-pointer' },
-  { id: 'pink', label: 'Rosa', dot: 'bg-rose-400', cls: 'bg-rose-400/85 text-slate-950 rounded px-0.5 cursor-pointer' },
+  { id: 'yellow', label: 'Amarelo', dot: 'bg-amber-300', cls: 'bg-amber-300/85 text-slate-950 rounded-[2px] cursor-pointer' },
+  { id: 'green', label: 'Esmeralda', dot: 'bg-emerald-400', cls: 'bg-emerald-400/80 text-slate-950 rounded-[2px] cursor-pointer' },
+  { id: 'cyan', label: 'Ciano', dot: 'bg-sky-400', cls: 'bg-sky-400/80 text-slate-950 rounded-[2px] cursor-pointer' },
+  { id: 'pink', label: 'Rosa', dot: 'bg-rose-400', cls: 'bg-rose-400/85 text-slate-950 rounded-[2px] cursor-pointer' },
 ];
 
-function loadHighlights(qId) {
-  if (!qId) return [];
+function loadCharMap(qId) {
+  if (!qId) return { contexto: {}, enunciado: {} };
   try {
     const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    return Array.isArray(all[qId]) ? all[qId] : [];
+    return all[qId] || { contexto: {}, enunciado: {} };
   } catch {
-    return [];
+    return { contexto: {}, enunciado: {} };
   }
 }
 
-function saveHighlights(qId, list) {
+function saveCharMap(qId, map) {
   if (!qId) return;
   try {
     const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    if (list.length) all[qId] = list;
+    const hasCtx = Object.keys(map.contexto || {}).length > 0;
+    const hasEnu = Object.keys(map.enunciado || {}).length > 0;
+    if (hasCtx || hasEnu) all[qId] = map;
     else delete all[qId];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
   } catch {}
 }
 
-function renderHighlightedText(text, highlights, onRemoveHighlight) {
-  if (!text || !highlights.length) return text;
-  const escaped = highlights
-    .map((h) => h.text)
-    .filter((t) => t && t.length >= 2)
-    .sort((a, b) => b.length - a.length)
-    .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  if (!escaped.length) return text;
+function getSelectionOffsets(containerEl) {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed || !containerEl) return null;
+  const range = sel.getRangeAt(0);
+  if (!containerEl.contains(range.startContainer) || !containerEl.contains(range.endContainer)) {
+    return null;
+  }
+  const preRange = document.createRange();
+  preRange.selectNodeContents(containerEl);
+  preRange.setEnd(range.startContainer, range.startOffset);
+  const start = preRange.toString().length;
+  const length = range.toString().length;
+  if (length < 1) return null;
+  return { start, end: start + length };
+}
 
-  const regex = new RegExp(`(${escaped.join('|')})`, 'g');
-  const parts = text.split(regex);
-  return parts.map((part, i) => {
-    const match = highlights.find((h) => h.text === part);
-    if (!match) return part;
-    const colorObj = COLORS.find((c) => c.id === match.color) || COLORS[0];
+function renderCharHighlighted(text, fieldMap, onDoubleClickSpan) {
+  if (!text) return null;
+  const keys = Object.keys(fieldMap || {});
+  if (!keys.length) return text;
+
+  const segments = [];
+  let curStart = 0;
+  let curColor = fieldMap[0] || null;
+
+  for (let i = 1; i <= text.length; i++) {
+    const c = i < text.length ? fieldMap[i] || null : '__END__';
+    if (c !== curColor) {
+      segments.push({ start: curStart, end: i, color: curColor, text: text.slice(curStart, i) });
+      curStart = i;
+      curColor = c;
+    }
+  }
+
+  return segments.map((seg) => {
+    if (!seg.color) return <span key={seg.start}>{seg.text}</span>;
+    const colorObj = COLORS.find((c) => c.id === seg.color) || COLORS[0];
     return (
       <mark
-        key={i}
+        key={seg.start}
         className={colorObj.cls}
-        title="Dê 2 cliques para desmarcar"
+        title="2 cliques para desmarcar este trecho"
         onDoubleClick={(e) => {
           e.stopPropagation();
-          onRemoveHighlight(match.text);
+          onDoubleClickSpan(seg.start, seg.end);
         }}
       >
-        {part}
+        {seg.text}
       </mark>
     );
   });
 }
 
-// Contexto (caso/situação) em bloco de citação + enunciado com Pincel Marcador persistente.
+// Contexto + enunciado com Pincel Marcador caractere por caractere (marca por cima com outra cor e desmarca com 2 cliques).
 export default function QuestionBody({ question }) {
   const [brushOn, setBrushOn] = useState(false);
   const [color, setColor] = useState('yellow');
-  const [highlights, setHighlights] = useState(() => loadHighlights(question?.id));
+  const [charMap, setCharMap] = useState(() => loadCharMap(question?.id));
+  const ctxRef = useRef(null);
+  const enuRef = useRef(null);
 
   useEffect(() => {
-    setHighlights(loadHighlights(question?.id));
+    setCharMap(loadCharMap(question?.id));
   }, [question?.id]);
 
-  const removeHighlight = (textToRemove) => {
+  const applyRange = (field, start, end) => {
     if (!question?.id) return;
-    const next = highlights.filter((h) => h.text !== textToRemove);
-    setHighlights(next);
-    saveHighlights(question.id, next);
+    const fieldObj = { ...(charMap[field] || {}) };
+    let allSameColor = true;
+    for (let i = start; i < end; i++) {
+      if (fieldObj[i] !== color) {
+        allSameColor = false;
+        break;
+      }
+    }
+    for (let i = start; i < end; i++) {
+      if (allSameColor) delete fieldObj[i];
+      else fieldObj[i] = color;
+    }
+    const next = { ...charMap, [field]: fieldObj };
+    setCharMap(next);
+    saveCharMap(question.id, next);
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUpField = (field, ref) => {
     if (!brushOn || !question?.id) return;
-    const sel = window.getSelection();
-    const selectedText = sel ? sel.toString().trim() : '';
-    if (selectedText.length < 2) return;
-
-    // Se já estiver marcado exatamente igual, desmarca; caso contrário, marca com a cor escolhida
-    const exists = highlights.some((h) => h.text === selectedText);
-    const next = exists
-      ? highlights.filter((h) => h.text !== selectedText)
-      : [...highlights, { text: selectedText, color }];
-
-    setHighlights(next);
-    saveHighlights(question.id, next);
-    sel.removeAllRanges();
+    const offsets = getSelectionOffsets(ref.current);
+    if (!offsets) return;
+    applyRange(field, offsets.start, offsets.end);
+    window.getSelection()?.removeAllRanges();
   };
+
+  const removeSpan = (field, start, end) => {
+    if (!question?.id) return;
+    const fieldObj = { ...(charMap[field] || {}) };
+    for (let i = start; i < end; i++) delete fieldObj[i];
+    const next = { ...charMap, [field]: fieldObj };
+    setCharMap(next);
+    saveCharMap(question.id, next);
+  };
+
+  const totalMarkedChars =
+    Object.keys(charMap.contexto || {}).length + Object.keys(charMap.enunciado || {}).length;
 
   const handleClear = () => {
-    setHighlights([]);
-    saveHighlights(question?.id, []);
+    const empty = { contexto: {}, enunciado: {} };
+    setCharMap(empty);
+    saveCharMap(question?.id, empty);
   };
 
   return (
-    <div onMouseUp={handleMouseUp}>
+    <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -112,7 +154,7 @@ export default function QuestionBody({ question }) {
                 ? 'border-amber-400/60 bg-amber-400/15 text-amber-300'
                 : 'border-slate-700/80 bg-slate-900/60 text-slate-400 hover:text-slate-200'
             }`}
-            title="Ative e selecione qualquer trecho para marcar (2 cliques em uma marcação para desmarcar)"
+            title="Arraste sobre qualquer palavra ou caractere para marcar. Marque por cima com outra cor ou dê 2 cliques para desmarcar."
           >
             <Highlighter className="h-3.5 w-3.5" />
             {brushOn ? 'Pincel Ativo' : 'Pincel Marcador'}
@@ -138,32 +180,41 @@ export default function QuestionBody({ question }) {
           </div>
         </div>
 
-        {highlights.length > 0 && (
+        {totalMarkedChars > 0 && (
           <button
             type="button"
             onClick={handleClear}
             className="inline-flex items-center gap-1 rounded-lg border border-slate-700/70 px-2 py-1 text-[11px] font-medium text-slate-400 hover:border-rose-500/40 hover:text-rose-400"
           >
-            <Eraser className="h-3 w-3" /> Limpar ({highlights.length})
+            <Eraser className="h-3 w-3" /> Limpar marcações
           </button>
         )}
       </div>
 
       {question.contexto && (
         <blockquote
+          ref={ctxRef}
+          onMouseUp={() => handleMouseUpField('contexto', ctxRef)}
           className={`mb-4 rounded-r-lg border-l-2 border-brand-line bg-subtle px-4 py-3 text-sm leading-relaxed text-ink-2 ${
             brushOn ? 'cursor-text select-text' : ''
           }`}
         >
-          {renderHighlightedText(question.contexto, highlights, removeHighlight)}
+          {renderCharHighlighted(question.contexto, charMap.contexto, (s, e) =>
+            removeSpan('contexto', s, e)
+          )}
         </blockquote>
       )}
+
       <h2
+        ref={enuRef}
+        onMouseUp={() => handleMouseUpField('enunciado', enuRef)}
         className={`text-[17px] font-semibold leading-snug text-ink ${
           brushOn ? 'cursor-text select-text' : ''
         }`}
       >
-        {renderHighlightedText(question.enunciado, highlights, removeHighlight)}
+        {renderCharHighlighted(question.enunciado, charMap.enunciado, (s, e) =>
+          removeSpan('enunciado', s, e)
+        )}
       </h2>
     </div>
   );
