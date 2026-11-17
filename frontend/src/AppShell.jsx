@@ -1,5 +1,6 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { WifiOff } from 'lucide-react';
+import LoginPage from './components/auth/LoginPage';
 import AppProvider from './context/AppProvider';
 import { useAppData, useUi } from './context/contexts';
 import { NAV_ITEMS } from './lib/constants';
@@ -62,12 +63,32 @@ function Content() {
 
 function Shell() {
   const { navigate, setPaletteOpen, paletteOpen } = useUi();
+  const [isLoginRoute, setIsLoginRoute] = useState(
+    () => window.location.pathname === '/login'
+  );
 
   const hotkeys = { 'mod+k': () => setPaletteOpen(!paletteOpen) };
   NAV_ITEMS.forEach((n) => {
     hotkeys[n.hotkey] = () => navigate(n.id);
   });
   useHotkeys(hotkeys);
+
+  if (isLoginRoute) {
+    return (
+      <LoginPage
+        onSuccess={() => {
+          window.history.replaceState({}, '', '/');
+          setIsLoginRoute(false);
+          navigate('dashboard');
+        }}
+        onSkip={() => {
+          window.history.replaceState({}, '', '/');
+          setIsLoginRoute(false);
+          navigate('dashboard');
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-canvas text-ink">

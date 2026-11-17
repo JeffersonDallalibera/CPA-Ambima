@@ -80,8 +80,10 @@ export default function Topbar() {
         ) : (
           <button
             type="button"
-            onClick={() => setAuthOpen(true)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-bold text-slate-950 hover:bg-emerald-400"
+            onClick={() => {
+              window.location.href = '/login';
+            }}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand px-3 text-xs font-semibold text-white hover:opacity-90"
           >
             <LogIn className="h-3.5 w-3.5" /> Entrar
           </button>
