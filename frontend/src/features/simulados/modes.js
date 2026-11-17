@@ -73,6 +73,42 @@ export function getSimModes(cert) {
       assisted: false,
     },
     {
+      id: 'official_cesgranrio',
+      label: 'Oficial Só Cesgranrio (50Q)',
+      description: `Modo prova real (sem retorno) com 50 questões exclusivas das 121 fichas oficiais da Cesgranrio na proporção ${ratio}.`,
+      durationMin: cert.durationMin,
+      totalQuestions: cert.totalQuestions,
+      icon: ShieldAlert,
+      assisted: false,
+    },
+    {
+      id: 'official_100',
+      label: 'Oficial Estendido (100Q)',
+      description: 'Prova real estendida (5h00, sem retorno) com 100 questões ponderadas pelos pesos oficiais para testar resistência.',
+      durationMin: 300,
+      totalQuestions: 100,
+      icon: ShieldAlert,
+      assisted: false,
+    },
+    {
+      id: 'official_hard',
+      label: 'Oficial Nível Difícil (30Q)',
+      description: 'Modo prova real (1h30, sem retorno) focado nas questões de alta e média complexidade.',
+      durationMin: 90,
+      totalQuestions: 30,
+      icon: ShieldAlert,
+      assisted: false,
+    },
+    {
+      id: 'official_marathon',
+      label: 'Oficial Maratona Total (Todas)',
+      description: 'Modo prova real (sem retorno) passando por todas as 148 questões do banco em sequência embaralhada.',
+      durationMin: 360,
+      totalQuestions: null,
+      icon: ShieldAlert,
+      assisted: false,
+    },
+    {
       id: 'sprint_20',
       label: 'Sprint rápido',
       description: `Bateria curta com os pesos da prova (${Object.values(sprint).join(' + ')}) para treinar ritmo e fixação.`,
@@ -174,6 +210,20 @@ function pickPool(modeId, ctx) {
 
   if (modeId === 'assisted_50' || modeId === 'official_50') {
     return byWeights(all, apportion(cert.totalQuestions, cert.weights), mix);
+  }
+  if (modeId === 'official_cesgranrio') {
+    return byWeights(all.filter((q) => q.oficial), apportion(cert.totalQuestions, cert.weights), mix);
+  }
+  if (modeId === 'official_100') {
+    return byWeights(all, apportion(100, cert.weights), mix);
+  }
+  if (modeId === 'official_hard') {
+    const hard = shuffle(all.filter((q) => q.dificuldade === 'Difícil'));
+    const med = shuffle(all.filter((q) => q.dificuldade === 'Médio'));
+    return [...hard, ...med].slice(0, 30);
+  }
+  if (modeId === 'official_marathon') {
+    return shuffle(all);
   }
   if (modeId === 'sprint_20') return byWeights(all, apportion(SPRINT_TOTAL, cert.weights));
   if (modeId === 'pareto_35') {
