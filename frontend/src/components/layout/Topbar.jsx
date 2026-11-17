@@ -1,14 +1,31 @@
-import { Search } from 'lucide-react';
+import { useState } from 'react';
+import { Search, LogIn, LogOut, ShieldCheck } from 'lucide-react';
 import { useAppData, useUi } from '../../context/contexts';
 import { NAV_ITEMS } from '../../lib/constants';
 import CertSwitcher from './CertSwitcher';
 import Kbd from '../ui/Kbd';
 import PomodoroChip from './PomodoroChip';
+import AuthModal from '../auth/AuthModal';
 
 export default function Topbar() {
   const { view, setPaletteOpen } = useUi();
   const { status } = useAppData();
   const current = NAV_ITEMS.find((n) => n.id === view);
+
+  const [authOpen, setAuthOpen] = useState(false);
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('cpa_jwt_user') || 'null');
+    } catch {
+      return null;
+    }
+  });
+
+  const handleLogout = () => {
+    localStorage.removeItem('cpa_jwt_token');
+    localStorage.removeItem('cpa_jwt_user');
+    setUser(null);
+  };
 
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line bg-canvas/90 px-4 backdrop-blur sm:px-6">
@@ -44,7 +61,38 @@ export default function Topbar() {
           <Search className="h-4 w-4" />
         </button>
         <PomodoroChip />
+
+        {user ? (
+          <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+            <span className="hidden font-semibold text-emerald-300 sm:inline">
+              {user.alias} ({user.emailMasked})
+            </span>
+            <button
+              type="button"
+              onClick={handleLogout}
+              title="Sair"
+              className="text-slate-400 hover:text-rose-400"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setAuthOpen(true)}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-bold text-slate-950 hover:bg-emerald-400"
+          >
+            <LogIn className="h-3.5 w-3.5" /> Entrar
+          </button>
+        )}
       </div>
+
+      <AuthModal
+        open={authOpen}
+        onClose={() => setAuthOpen(false)}
+        onAuthSuccess={(u) => setUser(u)}
+      />
     </header>
   );
 }
