@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Highlighter, Eraser, ScanSearch } from 'lucide-react';
+import { Highlighter, Eraser, ScanSearch, Volume2, Square } from 'lucide-react';
 
 const STORAGE_KEY = 'cpa_highlights_char_v2';
 
@@ -119,6 +119,7 @@ function analyzeExaminerXRay(question) {
 export default function QuestionBody({ question }) {
   const [brushOn, setBrushOn] = useState(false);
   const [xrayOn, setXrayOn] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
   const [color, setColor] = useState('yellow');
   const [charMap, setCharMap] = useState(() => loadCharMap(question?.id));
   const ctxRef = useRef(null);
@@ -126,7 +127,29 @@ export default function QuestionBody({ question }) {
 
   useEffect(() => {
     setCharMap(loadCharMap(question?.id));
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+    }
   }, [question?.id]);
+
+  const toggleSpeak = () => {
+    if (!window.speechSynthesis) return;
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+      return;
+    }
+    const text = `${question?.contexto || ''}. ${question?.enunciado || ''}`.trim();
+    if (!text) return;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'pt-BR';
+    utter.rate = 1.08;
+    utter.onend = () => setSpeaking(false);
+    utter.onerror = () => setSpeaking(false);
+    setSpeaking(true);
+    window.speechSynthesis.speak(utter);
+  };
 
   const applyRange = (field, start, end) => {
     if (!question?.id) return;
@@ -212,6 +235,20 @@ export default function QuestionBody({ question }) {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleSpeak}
+            className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
+              speaking
+                ? 'border-emerald-400/60 bg-emerald-400/15 text-emerald-300'
+                : 'border-slate-700/70 bg-slate-900/60 text-slate-400 hover:text-emerald-300'
+            }`}
+            title="Ouvir leitura da questão em Português (Modo Áudio)"
+          >
+            {speaking ? <Square className="h-3 w-3" /> : <Volume2 className="h-3.5 w-3.5" />}
+            {speaking ? 'Parar' : 'Ouvir'}
+          </button>
+
           <button
             type="button"
             onClick={() => setXrayOn((v) => !v)}
