@@ -59,7 +59,12 @@ export default function SimuladoResult({ result, cert, onRetry, onBack }) {
   const hits = questions.filter((q) => answers[q.id]?.correct).length;
   const scorePct = pct(hits, total);
   const passed = scorePct >= cert.passThreshold;
-  const review = questions.map((q, i) => ({ q, i })).filter(({ q }) => !answers[q.id]?.correct);
+  const [reviewFilter, setReviewFilter] = useState('all'); // 'all' | 'wrong' | 'correct'
+  const allItems = questions.map((q, i) => ({ q, i }));
+  const wrongItems = allItems.filter(({ q }) => !answers[q.id]?.correct);
+  const correctItems = allItems.filter(({ q }) => answers[q.id]?.correct);
+  const visibleReview =
+    reviewFilter === 'wrong' ? wrongItems : reviewFilter === 'correct' ? correctItems : allItems;
   const breakdown = moduleBreakdown(questions, answers);
 
   return (
