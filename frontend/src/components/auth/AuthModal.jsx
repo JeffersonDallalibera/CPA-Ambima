@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ShieldCheck, Lock, Mail, User, X, KeyRound } from 'lucide-react';
 
 export default function AuthModal({ open, onClose, onAuthSuccess }) {
@@ -126,8 +127,8 @@ export default function AuthModal({ open, onClose, onAuthSuccess }) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -321,6 +322,7 @@ export default function AuthModal({ open, onClose, onAuthSuccess }) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
