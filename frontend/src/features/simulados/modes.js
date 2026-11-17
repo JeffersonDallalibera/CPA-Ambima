@@ -109,6 +109,15 @@ export function getSimModes(cert) {
       assisted: false,
     },
     {
+      id: 'random_fresh',
+      label: 'Randômico Sem Repetição (30Q)',
+      description: 'Sorteio randômico inteligente: garante 30 perguntas completamente diferentes a cada nova abertura até zerar o banco.',
+      durationMin: 90,
+      totalQuestions: 30,
+      icon: Zap,
+      assisted: true,
+    },
+    {
       id: 'sprint_20',
       label: 'Sprint rápido',
       description: `Bateria curta com os pesos da prova (${Object.values(sprint).join(' + ')}) para treinar ritmo e fixação.`,
@@ -224,6 +233,30 @@ function pickPool(modeId, ctx) {
   }
   if (modeId === 'official_marathon') {
     return shuffle(all);
+  }
+  if (modeId === 'random_fresh') {
+    const KEY = 'cpa_random_seen_ids';
+    let seen = [];
+    try {
+      seen = JSON.parse(localStorage.getItem(KEY) || '[]');
+    } catch {
+      seen = [];
+    }
+    const seenSet = new Set(seen);
+    let unseen = shuffle(all.filter((q) => !seenSet.has(q.id)));
+    if (unseen.length < 30) {
+      const rest = shuffle(all.filter((q) => seenSet.has(q.id)));
+      const picked = [...unseen, ...rest].slice(0, 30);
+      try {
+        localStorage.setItem(KEY, JSON.stringify(picked.map((q) => q.id)));
+      } catch {}
+      return picked;
+    }
+    const picked = unseen.slice(0, 30);
+    try {
+      localStorage.setItem(KEY, JSON.stringify([...seen, ...picked.map((q) => q.id)]));
+    } catch {}
+    return picked;
   }
   if (modeId === 'sprint_20') return byWeights(all, apportion(SPRINT_TOTAL, cert.weights));
   if (modeId === 'pareto_35') {
